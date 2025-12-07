@@ -1,0 +1,943 @@
+{
+  "metadata": {
+    "source": "https://docs.cloud.google.com/agent-builder/overview",
+    "title": "Vertex AI Agent Builder Documentation",
+    "version": "2025-11-24",
+    "format": "json",
+    "optimizedFor": "AI retrieval and context"
+  },
+  "overview": {
+    "description": "Vertex AI Agent Builder is a suite of products that help developers build, scale, and govern AI agents in production. Vertex AI Agent Builder provides a full-stack, secure foundation that supports the entire agent lifecycle.",
+    "keyCapabilities": [
+      "Build agents using frameworks such as Agent Development Kit (ADK) or any other open-source framework",
+      "Scale agents into production with built-in testing, release management, and reliability",
+      "Govern agents with monitoring, audit trails, and security features"
+    ]
+  },
+  "components": {
+    "build": {
+      "description": "Build agents using various frameworks and tools",
+      "agentDevelopmentKit": {
+        "name": "Agent Development Kit (ADK)",
+        "description": "An open-source framework that simplifies the process of building sophisticated multi-agent systems while maintaining precise control over agent behavior",
+        "type": "framework"
+      },
+      "agentGarden": {
+        "name": "Agent Garden",
+        "status": "Preview",
+        "description": "A library in the Google Cloud console where you can find and explore sample agents and tools designed to accelerate development",
+        "location": "Google Cloud console",
+        "components": {
+          "agents": {
+            "description": "Prebuilt, end-to-end solutions for specific use cases (e.g., customer service, data analysis, creative writing)",
+            "publisher": "Google only",
+            "usage": "Select and deploy to your project",
+            "customizable": true
+          },
+          "tools": {
+            "description": "Individual components that can be added to your own agents",
+            "functionality": [
+              "Interacting with a database",
+              "Calling an external API",
+              "Performing a search"
+            ],
+            "integration": "Can be integrated into agents built with Agent Development Kit (ADK)"
+          }
+        },
+        "access": "Go to Agent Garden"
+      }
+    },
+    "scale": {
+      "description": "Scale agents into production with built-in testing, release management, and reliability",
+      "vertexAIAgentEngine": {
+        "name": "Vertex AI Agent Engine",
+        "description": "A set of services that enables developers to deploy, manage, and scale AI agents in production. Agent Engine handles the infrastructure to scale agents in production so you can focus on creating applications.",
+        "source": "https://docs.cloud.google.com/agent-builder/agent-engine/overview",
+        "note": "The name of the resource in the API reference is ReasoningEngine to maintain backwards compatibility",
+        "services": {
+          "runtime": {
+            "name": "Runtime",
+            "description": "Deploy and scale agents with a managed runtime and end-to-end management capabilities",
+            "features": [
+              "Customize the agent's container image with build-time installation scripts for system dependencies",
+              "Use security features including VPC-SC compliance and configuration of authentication and IAM",
+              "Access models and tools such as function calling",
+              "Deploy agents built using different Python frameworks and the Agent2Agent open protocol"
+            ],
+            "subPages": {
+              "quickstartAdk": {
+                "title": "Quickstart using Agent Development Kit",
+                "url": "/agent-builder/agent-engine/quickstart-adk"
+              },
+              "quickstart": {
+                "title": "Quickstart",
+                "url": "/agent-builder/agent-engine/quickstart"
+              },
+              "setUp": {
+                "title": "Set up the environment",
+                "url": "/agent-builder/agent-engine/set-up"
+              },
+              "develop": {
+                "title": "Develop an agent",
+                "url": "/agent-builder/agent-engine/develop",
+                "subPages": [
+                  "Agent Development Kit",
+                  "Agent2Agent",
+                  "LangChain",
+                  "LangGraph",
+                  "AG2",
+                  "LlamaIndex",
+                  "Custom"
+                ]
+              },
+              "deploy": {
+                "title": "Deploy an agent",
+                "url": "/agent-builder/agent-engine/deploy"
+              },
+              "use": {
+                "title": "Use an agent",
+                "url": "/agent-builder/agent-engine/use",
+                "subPages": []
+              },
+              "manage": {
+                "title": "Manage deployed agents",
+                "url": "/agent-builder/agent-engine/manage",
+                "subPages": [
+                  "Access control",
+                  "Tracing",
+                  "Logging",
+                  "Monitoring"
+                ]
+              },
+              "agentIdentity": {
+                "title": "Agent identity",
+                "url": "/agent-builder/agent-engine/agent-identity",
+                "status": "Preview"
+              },
+              "bidirectionalStreaming": {
+                "title": "Bidirectional streaming",
+                "url": "/agent-builder/agent-engine/bidirectional-streaming"
+              },
+              "optimizePerformance": {
+                "title": "Optimize and scale performance",
+                "url": "/agent-builder/agent-engine/optimize-runtime"
+              },
+              "privateServiceConnect": {
+                "title": "Using Private Service Connect interface",
+                "url": "/agent-builder/agent-engine/private-service-connect-interface"
+              }
+            }
+          },
+          "qualityAndEvaluation": {
+            "name": "Quality and evaluation",
+            "status": "Preview",
+            "description": "Evaluate agent quality with the integrated Gen AI Evaluation service and optimize agents with Gemini model training runs",
+            "url": "/vertex-ai/generative-ai/docs/agent-engine/evaluate"
+          },
+          "exampleStore": {
+            "name": "Example Store",
+            "status": "Preview",
+            "description": "Store and dynamically retrieve few-shot examples to improve agent performance",
+            "url": "/vertex-ai/generative-ai/docs/example-store/overview",
+            "subPages": {
+              "overview": {
+                "title": "Example Store overview",
+                "url": "/agent-builder/agent-engine/example-store/overview"
+              },
+              "quickstart": {
+                "title": "Example Store quickstart",
+                "url": "/agent-builder/agent-engine/example-store/quickstart"
+              },
+              "create": {
+                "title": "Create or reuse an Example Store instance",
+                "url": "/agent-builder/agent-engine/example-store/create-examplestore"
+              },
+              "upload": {
+                "title": "Upload examples",
+                "url": "/agent-builder/agent-engine/example-store/upload-examples"
+              },
+              "retrieve": {
+                "title": "Retrieve examples",
+                "url": "/agent-builder/agent-engine/example-store/retrieve-examples"
+              }
+            }
+          },
+          "sessions": {
+            "name": "Sessions",
+            "status": "Preview",
+            "description": "Agent Engine Sessions lets you store individual interactions between users and agents, providing definitive sources for conversation context",
+            "url": "/vertex-ai/generative-ai/docs/agent-engine/sessions/overview",
+            "subPages": {
+              "overview": {
+                "title": "Sessions overview",
+                "url": "/agent-builder/agent-engine/sessions/overview"
+              },
+              "manageAdk": {
+                "title": "Manage sessions using Agent Development Kit",
+                "url": "/agent-builder/agent-engine/sessions/manage-sessions-adk"
+              },
+              "manageApi": {
+                "title": "Manage sessions using console or API calls",
+                "url": "/agent-builder/agent-engine/sessions/manage-sessions-api"
+              }
+            }
+          },
+          "memoryBank": {
+            "name": "Memory Bank",
+            "status": "Preview",
+            "description": "Agent Engine Memory Bank lets you store and retrieve information from sessions to personalize agent interactions",
+            "url": "/vertex-ai/generative-ai/docs/agent-engine/memory-bank/overview",
+            "subPages": {
+              "overview": {
+                "title": "Overview",
+                "url": "/agent-builder/agent-engine/memory-bank/overview"
+              },
+              "setUp": {
+                "title": "Set up Memory Bank",
+                "url": "/agent-builder/agent-engine/memory-bank/set-up"
+              },
+              "quickstartApi": {
+                "title": "Quickstart with Agent Engine SDK",
+                "url": "/agent-builder/agent-engine/memory-bank/quickstart-api"
+              },
+              "quickstartAdk": {
+                "title": "Quickstart with Agent Development Kit",
+                "url": "/agent-builder/agent-engine/memory-bank/quickstart-adk"
+              },
+              "generateMemories": {
+                "title": "Generate memories",
+                "url": "/agent-builder/agent-engine/memory-bank/generate-memories"
+              },
+              "fetchMemories": {
+                "title": "Fetch memories",
+                "url": "/agent-builder/agent-engine/memory-bank/fetch-memories"
+              },
+              "revisions": {
+                "title": "Memory revisions",
+                "url": "/agent-builder/agent-engine/memory-bank/revisions"
+              }
+            }
+          },
+          "codeExecution": {
+            "name": "Code Execution",
+            "status": "Preview",
+            "description": "Agent Engine Code Execution lets your agent run code in a secure, isolated, and managed sandbox environment",
+            "url": "/vertex-ai/generative-ai/docs/agent-engine/code-execution/overview",
+            "subPages": {
+              "overview": {
+                "title": "Code Execution overview",
+                "url": "/agent-builder/agent-engine/code-execution/overview"
+              },
+              "quickstart": {
+                "title": "Code Execution quickstart",
+                "url": "/agent-builder/agent-engine/code-execution/quickstart"
+              }
+            }
+          },
+          "observability": {
+            "name": "Observability",
+            "description": "Understand agent behavior with Google Cloud Trace (supporting OpenTelemetry), Cloud Monitoring, and Cloud Logging",
+            "tools": [
+              {
+                "name": "Google Cloud Trace",
+                "url": "/vertex-ai/generative-ai/docs/agent-engine/manage/tracing",
+                "supports": "OpenTelemetry"
+              },
+              {
+                "name": "Cloud Monitoring",
+                "url": "/vertex-ai/generative-ai/docs/agent-engine/manage/monitoring"
+              },
+              {
+                "name": "Cloud Logging",
+                "url": "/vertex-ai/generative-ai/docs/agent-engine/manage/logging"
+              }
+            ]
+          },
+          "governance": {
+            "name": "Governance",
+            "description": "Vertex AI Agent Engine supports several features to help you govern agents in production and meet your security and enterprise needs",
+            "features": [
+              {
+                "name": "Agent Engine Threat Detection",
+                "status": "Preview",
+                "description": "A built-in service of Security Command Center that helps you detect and investigate potential attacks on agents deployed to Vertex AI Agent Engine Runtime",
+                "url": "/security-command-center/docs/agent-engine-threat-detection-overview"
+              },
+              {
+                "name": "Agent identity",
+                "status": "Preview",
+                "description": "Use Identity Access Management (IAM) agent identity to provide security and access management features",
+                "url": "/agent-builder/agent-engine/agent-identity"
+              }
+            ]
+          }
+        },
+        "workflow": {
+          "steps": [
+            {
+              "step": 1,
+              "title": "Set up the environment",
+              "description": "Set up your Google project and install the latest version of the Vertex AI SDK for Python",
+              "url": "/vertex-ai/generative-ai/docs/agent-engine/set-up"
+            },
+            {
+              "step": 2,
+              "title": "Develop an agent",
+              "description": "Develop an agent that can be deployed on Vertex AI Agent Engine",
+              "url": "/vertex-ai/generative-ai/docs/agent-engine/develop"
+            },
+            {
+              "step": 3,
+              "title": "Deploy the agent",
+              "description": "Deploy the agent on the Vertex AI Agent Engine managed runtime",
+              "url": "/vertex-ai/generative-ai/docs/agent-engine/deploy"
+            },
+            {
+              "step": 4,
+              "title": "Use the agent",
+              "description": "Query the agent by sending an API request",
+              "url": "/vertex-ai/generative-ai/docs/agent-engine/use"
+            },
+            {
+              "step": 5,
+              "title": "Manage the deployed agent",
+              "description": "Manage and delete agents that you have deployed to Vertex AI Agent Engine",
+              "url": "/vertex-ai/generative-ai/docs/agent-engine/manage"
+            }
+          ]
+        },
+        "supportedFrameworks": {
+          "customTemplate": {
+            "level": "Custom template",
+            "description": "You can adapt a custom template to support deployment to Vertex AI Agent Engine from your framework",
+            "frameworks": [
+              {
+                "name": "CrewAI",
+                "url": "https://github.com/GoogleCloudPlatform/generative-ai/blob/main/gemini/agent-engine/evaluating_crewai_agent_engine_customized_template.ipynb"
+              },
+              {
+                "name": "Custom frameworks",
+                "url": "/vertex-ai/generative-ai/docs/agent-engine/develop/custom"
+              }
+            ]
+          },
+          "vertexAiSdkIntegration": {
+            "level": "Vertex AI SDK integration",
+            "description": "Vertex AI Agent Engine provides managed templates per framework in the Vertex AI SDK and documentation",
+            "frameworks": [
+              {
+                "name": "AG2",
+                "url": "/vertex-ai/generative-ai/docs/agent-engine/develop/ag2"
+              },
+              {
+                "name": "LlamaIndex",
+                "url": "/vertex-ai/generative-ai/docs/agent-engine/develop/llama-index/query-pipeline"
+              }
+            ]
+          },
+          "fullIntegration": {
+            "level": "Full integration",
+            "description": "Features are integrated to work across the framework, Vertex AI Agent Engine, and broader Google Cloud ecosystem",
+            "frameworks": [
+              {
+                "name": "Agent Development Kit (ADK)",
+                "url": "/vertex-ai/generative-ai/docs/agent-engine/develop/adk"
+              },
+              {
+                "name": "LangChain",
+                "url": "/vertex-ai/generative-ai/docs/agent-engine/develop/langchain"
+              },
+              {
+                "name": "LangGraph",
+                "url": "/vertex-ai/generative-ai/docs/agent-engine/develop/langgraph"
+              }
+            ]
+          }
+        },
+        "agentStarterPack": {
+          "name": "Agent Starter Pack",
+          "description": "A collection of production-ready generative AI agent templates built for Vertex AI Agent Engine",
+          "url": "https://github.com/GoogleCloudPlatform/agent-starter-pack",
+          "features": [
+            "Pre-built agent templates: ReAct, RAG, multi-agent, and other templates",
+            "Interactive playground: Test and interact with your agent",
+            "Automated infrastructure: Uses Terraform for streamlined resource management",
+            "CI/CD pipelines: Automated deployment workflows leveraging Cloud Build",
+            "Observability: Built-in support for Cloud Trace and Cloud Logging"
+          ],
+          "quickstart": "https://github.com/GoogleCloudPlatform/agent-starter-pack?tab=readme-ov-file#-get-started-in-1-minute"
+        },
+        "useCases": [
+          {
+            "category": "Build agents by connecting to public APIs",
+            "examples": [
+              {
+                "title": "Convert between currencies",
+                "description": "Create a function that connects to a currency exchange app, allowing the model to provide accurate answers to queries such as \"What's the exchange rate for euros to dollars today?\"",
+                "notebook": "https://github.com/GoogleCloudPlatform/generative-ai/blob/main/gemini/agent-engine/intro_agent_engine.ipynb"
+              },
+              {
+                "title": "Designing a community solar project",
+                "description": "Identify potential locations, look up relevant government offices and suppliers, and review satellite images and solar potential of regions and buildings to find the optimal location to install your solar panels",
+                "notebook": "https://github.com/GoogleCloudPlatform/generative-ai/blob/main/gemini/agent-engine/tutorial_google_maps_agent.ipynb"
+              }
+            ]
+          },
+          {
+            "category": "Build agents by connecting to databases",
+            "examples": [
+              {
+                "title": "Integration with AlloyDB and Cloud SQL for PostgreSQL",
+                "blogPost": "https://cloud.google.com/blog/products/databases/alloydb-and-cloudsql-for-postgresql-on-langchain-on-vertex-ai",
+                "notebooks": [
+                  "https://github.com/GoogleCloudPlatform/generative-ai/blob/main/gemini/agent-engine/tutorial_cloud_sql_pg_rag_agent.ipynb",
+                  "https://github.com/GoogleCloudPlatform/generative-ai/blob/main/gemini/agent-engine/tutorial_alloydb_rag_agent.ipynb"
+                ]
+              },
+              {
+                "title": "Build agents with tools that access data in your database",
+                "notebook": "https://github.com/GoogleCloudPlatform/generative-ai/blob/main/gemini/agent-engine/tutorial_mcp_toolbox_for_databases.ipynb"
+              }
+            ]
+          },
+          {
+            "category": "Query and understand datastores",
+            "examples": [
+              {
+                "title": "Query and understand structured datastores using natural language",
+                "notebook": "https://github.com/GoogleCloudPlatform/generative-ai/blob/main/gemini/agent-engine/tutorial_vertex_ai_search_rag_agent.ipynb"
+              },
+              {
+                "title": "Query and understand graph databases using natural language",
+                "blogPost": "https://www.googlecloudcommunity.com/gc/Cloud-Product-Articles/GenAI-GraphRAG-and-AI-agents-using-Vertex-AI-Reasoning-Engine/ta-p/789066"
+              },
+              {
+                "title": "Query and understand vector stores using natural language",
+                "blogPost": "https://www.mongodb.com/developer/products/atlas/ragdeployment-vertex-ai-reasoning-engine/"
+              }
+            ]
+          },
+          {
+            "category": "Build agents with Agent Development Kit",
+            "examples": [
+              {
+                "title": "Build and deploy agents using Agent Development Kit",
+                "url": "http://google.github.io/adk-docs/deploy/agent-engine"
+              }
+            ]
+          },
+          {
+            "category": "Express Mode",
+            "examples": [
+              {
+                "title": "Convert between currencies with Express Mode",
+                "description": "Deploy to Agent Engine without billing with Vertex AI Express mode",
+                "notebook": "https://github.com/GoogleCloudPlatform/generative-ai/blob/main/gemini/agent-engine/agent_engine_express_mode.ipynb"
+              },
+              {
+                "title": "Manage context with Sessions and Memory Bank in Express Mode",
+                "url": "http://google.github.io/adk-docs/sessions/express-mode/"
+              }
+            ]
+          },
+          {
+            "category": "Build agents with OSS frameworks",
+            "examples": [
+              {
+                "title": "Build and deploy agents using the OneTwo open-source framework",
+                "blogPost": "https://www.googlecloudcommunity.com/gc/Community-Blogs/OneTwo-and-Vertex-AI-Reasoning-Engine-exploring-advanced-AI/ba-p/788254"
+              },
+              {
+                "title": "Build and deploy agents using the LangGraph open-source framework",
+                "notebook": "https://github.com/GoogleCloudPlatform/generative-ai/blob/main/gemini/agent-engine/tutorial_langgraph.ipynb"
+              }
+            ]
+          },
+          {
+            "category": "Debugging and optimizing agents",
+            "examples": [
+              {
+                "title": "Build and trace agents using OpenTelemetry and Cloud Trace",
+                "notebook": "https://github.com/GoogleCloudPlatform/generative-ai/blob/main/gemini/agent-engine/tracing_agents_in_agent_engine.ipynb"
+              }
+            ]
+          },
+          {
+            "category": "Build multi-agent systems",
+            "examples": [
+              {
+                "title": "Build multi-agent systems with A2A protocol (preview)",
+                "description": "Build interoperable agents that communicate and collaborate with other agents regardless of their framework",
+                "url": "https://a2a-protocol.org/"
+              }
+            ]
+          }
+        ],
+        "enterpriseSecurity": {
+          "description": "Vertex AI Agent Engine supports several features to help you meet enterprise security requirements, adhere to your organization's security policies, and follow security best practices",
+          "features": [
+            {
+              "name": "VPC Service Controls",
+              "description": "Strengthen data security and mitigate the risks of data exfiltration. When VPC Service Controls is configured, the deployed agent retains secure access to Google APIs and services, such as BigQuery API, Cloud SQL Admin API, and Vertex AI API, verifying seamless operation within your defined perimeter. Critically, VPC Service Controls effectively blocks all public internet access, confining data movement to your authorized network boundaries",
+              "url": "/vertex-ai/docs/general/vpc-service-controls",
+              "note": "If you use Vertex AI Agent Engine in a VPC-SC environment, you must create an ingress rule in your perimeter to allow ingress from the Reasoning Engine Service Agent (service-PROJECT_NUMBER@gcp-sa-aiplatform-re.iam.gserviceaccount.com) to storage.googleapis.com service and artifactregistry.googleapis.com service"
+            },
+            {
+              "name": "Private Service Connect interface",
+              "description": "For Vertex AI Agent Engine Runtime, PSC-I lets your agents interact with privately hosted services in a user's VPC",
+              "url": "/agent-builder/agent-engine/private-service-connect-interface"
+            },
+            {
+              "name": "Customer-managed encryption keys (CMEK)",
+              "description": "Protect your data with your own encryption keys, which gives you ownership and full control of the keys that protect your data at rest in Google Cloud",
+              "url": "/vertex-ai/generative-ai/docs/agent-engine/manage/access#cmek"
+            },
+            {
+              "name": "Data residency (DRZ)",
+              "description": "Ensure that all data at rest and in use are stored within the specified region",
+              "url": "/vertex-ai/generative-ai/docs/learn/data-residency"
+            },
+            {
+              "name": "HIPAA",
+              "description": "As a part of Vertex AI Platform, Vertex AI Agent Engine supports HIPAA workloads",
+              "url": "https://cloud.google.com/security/compliance/hipaa"
+            },
+            {
+              "name": "Access Transparency",
+              "description": "Provides you with logs that capture the actions Google personnel take when accessing your content",
+              "url": "/vertex-ai/docs/general/access-transparency"
+            }
+          ],
+          "securityFeatureMatrix": {
+            "runtime": {
+              "vpcServiceControls": true,
+              "cmek": true,
+              "drzAtRest": true,
+              "drzInUse": false,
+              "hipaa": true,
+              "accessTransparency": true
+            },
+            "sessions": {
+              "vpcServiceControls": true,
+              "cmek": true,
+              "drzAtRest": true,
+              "drzInUse": true,
+              "hipaa": true,
+              "accessTransparency": true
+            },
+            "memoryBank": {
+              "vpcServiceControls": true,
+              "cmek": true,
+              "drzAtRest": true,
+              "drzInUse": "Yes* (only when using a Gemini regional endpoint)",
+              "hipaa": true,
+              "accessTransparency": true
+            },
+            "exampleStore": {
+              "vpcServiceControls": false,
+              "cmek": false,
+              "drzAtRest": false,
+              "drzInUse": false,
+              "hipaa": true,
+              "accessTransparency": false
+            },
+            "codeExecution": {
+              "vpcServiceControls": false,
+              "cmek": false,
+              "drzAtRest": false,
+              "drzInUse": true,
+              "hipaa": false,
+              "accessTransparency": false
+            }
+          }
+        },
+        "expressMode": {
+          "description": "Vertex AI Agent Engine supports Vertex AI in express mode. This lets you use Vertex AI Agent Engine without creating a Google Cloud project",
+          "url": "/vertex-ai/generative-ai/docs/start/express-mode/overview",
+          "features": [
+            {
+              "tier": "Free or paid tier",
+              "description": "During client side development of your agent, Vertex AI express mode lets you access models from Vertex AI Studio using an API key"
+            },
+            {
+              "tier": "Free or paid tier",
+              "description": "In express mode, you can create a ReasoningEngine instance, which lets you use the Session and Memory Bank service"
+            },
+            {
+              "tier": "Free or paid tier",
+              "deploymentMethod": "From source files",
+              "description": "Deploy your agent directly from local source code without using a Cloud Storage bucket"
+            },
+            {
+              "tier": "Paid tier only",
+              "deploymentMethod": "From an agent object",
+              "description": "Requires enabling billing on your express mode account because deployment from an agent object requires a Cloud Storage bucket to store agent code and artifacts"
+            }
+          ],
+          "note": "Vertex AI in express mode has different quotas than regular Google Cloud projects. See Express mode quota and system limits for Vertex AI Agent Engine express mode quota information",
+          "quotaUrl": "/agent-builder/quotas#vertex-agent-engine-quotas-express-mode"
+        },
+        "supportedRegions": {
+          "url": "/agent-builder/locations#supported-regions-agent-engine",
+          "description": "See Locations for a list of supported regions for Vertex AI Agent Engine"
+        },
+        "quota": {
+          "url": "/agent-builder/quotas#vertex-agent-engine-quotas",
+          "description": "See Quota and system limits for Vertex AI Agent Engine quota information"
+        },
+        "pricing": {
+          "description": "A free tier is available for Vertex AI Agent Engine Runtime",
+          "url": "/vertex-ai/pricing#vertex-ai-agent-engine"
+        },
+        "sdkMigration": {
+          "description": "The agent_engines module within the Vertex AI SDK for Python is being refactored to a client-based design",
+          "reasons": [
+            "To align with Google ADK and Google Gen AI SDK in canonical type representations",
+            "For client-level scoping of Google Cloud parameters in multi-project multi-location applications",
+            "To improve discoverability and cohesiveness of Vertex AI Agent Engine services"
+          ],
+          "migrationGuide": "/agent-builder/deprecations/agent-engine-migration",
+          "note": "See the Agent Engine SDK migration guide for instructions to migrate to the client-based Vertex AI SDK for Python if you are still on a version of google-cloud-aiplatform before 1.112.0"
+        },
+        "gettingStarted": {
+          "notebooks": [
+            {
+              "title": "Building and Deploying an Agent with Vertex AI Agent Engine",
+              "environments": [
+                {
+                  "name": "Colab",
+                  "url": "https://colab.research.google.com/github/GoogleCloudPlatform/generative-ai/blob/main/gemini/agent-engine/intro_agent_engine.ipynb"
+                },
+                {
+                  "name": "Colab Enterprise",
+                  "url": "https://console.cloud.google.com/vertex-ai/colab/import/https%3A%2F%2Fraw.githubusercontent.com%2FGoogleCloudPlatform%2Fgenerative-ai%2Fmain%2Fgemini%2Fagent-engine%2Fintro_agent_engine.ipynb"
+                },
+                {
+                  "name": "Vertex AI Workbench",
+                  "url": "https://console.cloud.google.com/vertex-ai/workbench/deploy-notebook?download_url=https%3A%2F%2Fraw.githubusercontent.com%2FGoogleCloudPlatform%2Fgenerative-ai%2Fmain%2Fgemini%2Fagent-engine%2Fintro_agent_engine.ipynb"
+                },
+                {
+                  "name": "GitHub",
+                  "url": "https://github.com/GoogleCloudPlatform/generative-ai/blob/main/gemini/agent-engine/intro_agent_engine.ipynb"
+                }
+              ]
+            }
+          ],
+          "video": {
+            "title": "Introduction to Vertex AI Agent Engine",
+            "url": "https://www.youtube.com/watch?v=NrgoZLcY3Kk"
+          }
+        }
+      },
+      "agentTools": {
+        "description": "Tools that can be equipped to ADK agents",
+        "categories": {
+          "builtIn": {
+            "description": "Built-in tools provided by Google Cloud",
+            "tools": [
+              "Grounding with Google Search",
+              "Vertex AI Search",
+              "Code Execution"
+            ]
+          },
+          "ragEngine": {
+            "description": "Retrieval-augmented generation (RAG) capabilities"
+          },
+          "googleCloudTools": {
+            "description": "Tools to connect to Google Cloud services",
+            "integrations": {
+              "apis": {
+                "description": "APIs managed in Apigee API Hub"
+              },
+              "enterpriseApplications": {
+                "description": "100+ enterprise applications through Integration Connectors"
+              },
+              "customIntegrations": {
+                "description": "Custom integrations with Application Integration"
+              }
+            }
+          },
+          "mcpTools": {
+            "description": "Model Context Protocol (MCP) tools",
+            "note": "Includes MCP Toolbox for Databases"
+          },
+          "ecosystemTools": {
+            "description": "Third-party ecosystem tools",
+            "examples": [
+              "LangChain tools",
+              "CrewAI tools",
+              "GenAI Toolbox for Databases"
+            ]
+          }
+        }
+      }
+    },
+    "govern": {
+      "description": "Monitor what agents are doing with audit trail for end-to-end observability",
+      "securityCommandCenter": {
+        "name": "Agent Engine Threat Detection",
+        "status": "Preview",
+        "description": "A built-in service of Security Command Center that helps detect and investigate potential attacks on agents deployed to Vertex AI Agent Engine Runtime",
+        "purpose": "Detect threats"
+      },
+      "agentIdentity": {
+        "name": "Agent Identity",
+        "status": "Preview",
+        "description": "Use Identity Access Management (IAM) agent identity to provide security and access management features when using agents on Vertex AI Agent Engine Runtime",
+        "purpose": "Security and access management"
+      }
+    }
+  },
+  "workflow": {
+    "steps": [
+      {
+        "step": 1,
+        "action": "Discover agent samples and tools specific to your use cases in the Agent Garden"
+      },
+      {
+        "step": 2,
+        "action": "Build and test your agent using the Agent Development Kit"
+      },
+      {
+        "step": 3,
+        "action": "Deploy your agent to Vertex AI Agent Engine"
+      }
+    ]
+  },
+  "documentationStructure": {
+    "mainSections": [
+      "Agent Development Kit",
+      "Vertex AI Agent Engine",
+      "Sessions",
+      "Memory Bank",
+      "Code Execution",
+      "Evaluate agents using the GenAI Client in Vertex AI SDK",
+      "Example Store",
+      "Agent2Agent (A2A) Protocol",
+      "Agent Tools"
+    ],
+    "agentDevelopmentKit": {
+      "topics": [
+        "Overview",
+        "Quickstart using Agent Development Kit",
+        "Set up the environment",
+        "Develop an agent",
+        "Deploy an agent",
+        "Use an agent",
+        "Manage deployed agents"
+      ],
+      "frameworks": [
+        "Agent Development Kit",
+        "Agent2Agent",
+        "LangChain",
+        "LangGraph",
+        "AG2",
+        "LlamaIndex",
+        "Custom"
+      ]
+    },
+    "vertexAIAgentEngine": {
+      "topics": [
+        "Overview",
+        "Runtime",
+        "Quickstart",
+        "Set up the environment",
+        "Develop an agent",
+        "Deploy an agent",
+        "Use an agent",
+        "Manage deployed agents",
+        "Agent identity",
+        "Bidirectional streaming",
+        "Optimize and scale performance",
+        "Using Private Service Connect interface"
+      ],
+      "management": {
+        "overview": "Manage deployed agents",
+        "features": [
+          "Access control",
+          "Tracing",
+          "Logging",
+          "Monitoring"
+        ]
+      }
+    },
+    "sessions": {
+      "topics": [
+        "Sessions overview",
+        "Manage sessions using Agent Development Kit",
+        "Manage sessions using console or API calls"
+      ]
+    },
+    "memoryBank": {
+      "topics": [
+        "Overview",
+        "Set up Memory Bank",
+        "Quickstart with Agent Engine SDK",
+        "Quickstart with Agent Development Kit",
+        "Generate memories",
+        "Fetch memories",
+        "Memory revisions"
+      ]
+    },
+    "codeExecution": {
+      "topics": [
+        "Code Execution overview",
+        "Code Execution quickstart"
+      ],
+      "details": {
+        "name": "Code Execution",
+        "status": "Preview",
+        "description": "Agent Engine Code Execution lets your agent run code in a secure, isolated, and managed sandbox environment",
+        "url": "/agent-builder/agent-engine/code-execution/overview",
+        "subPages": [
+          {
+            "title": "Code Execution overview",
+            "url": "/agent-builder/agent-engine/code-execution/overview"
+          },
+          {
+            "title": "Code Execution quickstart",
+            "url": "/agent-builder/agent-engine/code-execution/quickstart"
+          }
+        ]
+      }
+    },
+    "evaluate": {
+      "name": "Evaluate agents using the GenAI Client in Vertex AI SDK",
+      "description": "Evaluate agent quality with the integrated Gen AI Evaluation service",
+      "url": "/agent-builder/agent-engine/evaluate",
+      "status": "Preview"
+    },
+    "exampleStore": {
+      "topics": [
+        "Example Store overview",
+        "Example Store quickstart",
+        "Create or reuse an Example Store instance",
+        "Upload examples",
+        "Retrieve examples"
+      ]
+    },
+    "agent2AgentProtocol": {
+      "topics": [
+        "Overview",
+        "A2A Python SDK",
+        "A2A JavaScript SDK",
+        "A2A Java SDK",
+        "A2A C#/.NET SDK",
+        "A2A samples"
+      ]
+    },
+    "agentTools": {
+      "categories": [
+        "Built-in tools",
+        "Google Cloud tools",
+        "Model Context Protocol (MCP) tools",
+        "MCP Toolbox for Databases",
+        "Ecosystem tools"
+      ],
+      "ecosystemTools": {
+        "categories": [
+          "AI and ML",
+          "Application development",
+          "Application hosting",
+          "Compute",
+          "Data analytics and pipelines",
+          "Databases",
+          "Distributed, hybrid, and multicloud",
+          "Generative AI",
+          "Industry solutions",
+          "Networking",
+          "Observability and monitoring",
+          "Security",
+          "Storage",
+          "Access and resources management",
+          "Costs and usage management",
+          "Infrastructure as code",
+          "Migration",
+          "SDK, languages, frameworks, and tools"
+        ]
+      }
+    }
+  },
+  "resources": {
+    "documentation": "https://docs.cloud.google.com/agent-builder/overview",
+    "blogPosts": [
+      "Multi-agent systems with Vertex AI",
+      "What are AI Agents?",
+      "Vertex AI Agent Builder"
+    ],
+    "nextSteps": [
+      "Agent Development Kit overview"
+    ]
+  },
+  "keyConcepts": {
+    "aiAgents": "AI agents are autonomous systems that can perform tasks, make decisions, and interact with their environment",
+    "multiAgentSystems": "Systems where multiple agents work together to accomplish complex tasks",
+    "agentLifecycle": "The complete process from building to deploying to governing agents",
+    "rag": "Retrieval-Augmented Generation - combining retrieval of information with generative AI",
+    "mcp": "Model Context Protocol - a protocol for tools and context management",
+    "observability": "The ability to understand agent behavior through tracing, monitoring, and logging"
+  },
+  "index": {
+    "keywords": [
+      "vertex ai",
+      "agent builder",
+      "ai agents",
+      "multi-agent systems",
+      "agent development kit",
+      "ADK",
+      "agent garden",
+      "vertex ai agent engine",
+      "sessions",
+      "memory bank",
+      "code execution",
+      "agent tools",
+      "MCP",
+      "model context protocol",
+      "RAG",
+      "retrieval-augmented generation",
+      "langchain",
+      "langgraph",
+      "llamaindex",
+      "agent2agent",
+      "A2A",
+      "observability",
+      "tracing",
+      "monitoring",
+      "logging",
+      "security command center",
+      "agent identity",
+      "IAM",
+      "threat detection"
+    ],
+    "components": [
+      "Agent Development Kit",
+      "Agent Garden",
+      "Vertex AI Agent Engine",
+      "Sessions",
+      "Memory Bank",
+      "Code Execution",
+      "Example Store",
+      "Agent2Agent Protocol",
+      "Agent Tools"
+    ],
+    "frameworks": [
+      "Agent Development Kit",
+      "Agent2Agent",
+      "LangChain",
+      "LangGraph",
+      "AG2",
+      "LlamaIndex",
+      "Custom"
+    ],
+    "tools": [
+      "Built-in tools",
+      "Google Cloud tools",
+      "MCP tools",
+      "Ecosystem tools",
+      "LangChain tools",
+      "CrewAI tools",
+      "GenAI Toolbox for Databases"
+    ]
+  }
+}
+

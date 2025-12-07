@@ -1,0 +1,107 @@
+# Vertex AI Agent Builder Project Documentation
+
+## Primary Documentation Sources
+The primary sources of documentation for all agents in this project are located in the `origin-docs/` directory:
+
+### 1. Vertex AI Agent Builder
+- **Location**: `origin-docs/Vertex-AI-Agent-Builder-112925/`
+- **Main File**: `vertex-ai-agent-builder-documentation.json`
+- **Description**: Complete documentation for Vertex AI Agent Builder, Agent Engine, and all sub-components
+- **Key Topics**: 
+  - Agent Development Kit (ADK)
+  - Vertex AI Agent Engine (Runtime, Sessions, Memory Bank, Code Execution, Example Store)
+  - Agent Garden
+  - Supported frameworks (LangChain, LangGraph, LlamaIndex, AutoGen, etc.)
+  - Enterprise security features
+  - Use cases and examples
+
+### 2. Firecrawl MCP
+- **Location**: `origin-docs/firecrawl-112925/`
+- **Main File**: `firecrawl-mcp-documentation.json`
+- **Description**: Firecrawl MCP server documentation for web scraping capabilities
+- **Key Topics**:
+  - Web scraping and crawling
+  - Batch operations
+  - Search and content extraction
+  - MCP tool integration
+
+### 3. Google Cloud CLI (gcloud)
+- **Location**: `origin-docs/gcloud-cli-112925/`
+- **Main File**: `gcloud-cli-documentation.json`
+- **Description**: Complete Google Cloud CLI documentation for managing GCP resources
+- **Key Topics**:
+  - Authentication and configuration
+  - Project and service management
+  - Compute, Cloud Run, Vertex AI commands
+  - IAM and storage management
+  - Scripting and automation
+
+## Documentation Structure
+When working with agents, always reference the documentation in this order:
+
+1. **Vertex AI Agent Builder** (`origin-docs/Vertex-AI-Agent-Builder-112925/`) - For agent development, frameworks, and Vertex AI services
+2. **Firecrawl MCP** (`origin-docs/firecrawl-112925/`) - For web scraping and content extraction needs
+3. **Google Cloud CLI** (`origin-docs/gcloud-cli-112925/`) - For GCP resource management and CLI operations
+
+## Agent Development Guidelines
+
+### Before Implementing Agent Features:
+1. **Always consult the Vertex AI Agent Builder documentation first** (`origin-docs/Vertex-AI-Agent-Builder-112925/vertex-ai-agent-builder-documentation.json`)
+   - Check for supported frameworks and tools
+   - Review Agent Development Kit (ADK) patterns
+   - Verify Vertex AI Agent Engine capabilities
+   - Check security and compliance requirements
+
+2. **For web scraping needs**, reference Firecrawl MCP documentation (`origin-docs/firecrawl-112925/firecrawl-mcp-documentation.json`)
+   - Use appropriate Firecrawl tools
+   - Follow batch processing best practices
+   - Handle rate limiting appropriately
+
+3. **For GCP operations**, reference gcloud CLI documentation (`origin-docs/gcloud-cli-112925/gcloud-cli-documentation.json`)
+   - Use correct authentication methods
+   - Follow configuration best practices
+   - Use appropriate output formats for scripting
+
+### Documentation Usage:
+- Use the structured JSON documentation files as the authoritative source
+- Reference specific sections by their JSON paths when discussing implementation details
+- Follow the workflows and best practices outlined in the documentation
+- Use the index sections for keyword-based searches
+
+## Documentation Format
+All documentation is optimized for AI retrieval with:
+- Structured JSON format
+- Comprehensive indexes with keywords
+- Complete API references and URLs
+- Framework-specific guidance
+- Security and compliance information
+- Command examples and workflows
+
+## Quick Reference Commands
+
+### Vertex AI Agent Builder
+- Check `origin-docs/Vertex-AI-Agent-Builder-112925/vertex-ai-agent-builder-documentation.json` for:
+  - Agent Development Kit (ADK) information
+  - Vertex AI Agent Engine details
+  - Runtime, Sessions, Memory Bank, Code Execution, Example Store
+  - Supported frameworks (LangChain, LangGraph, LlamaIndex, etc.)
+  - Enterprise security features
+  - Use cases and examples
+
+### Firecrawl MCP
+- Check `origin-docs/firecrawl-112925/firecrawl-mcp-documentation.json` for:
+  - Web scraping capabilities
+  - Firecrawl MCP tools and usage
+  - Batch operations and status checking
+  - Rate limiting and credit monitoring
+
+### Google Cloud CLI
+- Check `origin-docs/gcloud-cli-112925/gcloud-cli-documentation.json` for:
+  - Authentication and configuration commands
+  - Project and service management
+  - Compute, Cloud Run, Vertex AI commands
+  - IAM and storage operations
+  - Scripting patterns and best practices
+
+
+

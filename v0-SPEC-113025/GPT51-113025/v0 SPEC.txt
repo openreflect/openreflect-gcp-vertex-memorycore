@@ -1,0 +1,92 @@
+OPENREFLECT — PHASE 0 SPECIFICATION (v0)
+
+------------------------------------------------------------
+OBJECTIVE
+------------------------------------------------------------
+Create a minimal working memory pipeline using Vertex AI Agent Builder
+Memory Bank, callable directly from Cursor, enabling:
+
+- memory.write()
+- memory.search()
+- memory.retrieve()
+
+This phase proves direct API access.
+No abstractions. No auxiliary infrastructure.
+
+------------------------------------------------------------
+SCOPE
+------------------------------------------------------------
+Phase 0 includes:
+1. Authenticating to GCP from Cursor.
+2. Calling Vertex Memory Bank REST endpoints directly.
+3. Writing a single memory entry.
+4. Retrieving that entry using search.
+5. Confirming round-trip functionality.
+
+------------------------------------------------------------
+NON-GOALS
+------------------------------------------------------------
+- No Redis, Mongo, Firestore, AlloyDB.
+- No LangChain, LangGraph, LlamaIndex, AutoGen.
+- No RAG pipeline.
+- No UI, no server, no persona orchestration.
+- No local vector stores.
+- No frameworks beyond what is strictly required.
+- No multi-agent system.
+
+------------------------------------------------------------
+ARCHITECTURE (MINIMAL)
+------------------------------------------------------------
+Cursor → Google Auth → Vertex MemoryBank API → return to Cursor
+
+Files (max 3):
+- memory_client.js  (≤ 50 lines)
+- example_write.js  (≤ 30 lines)
+- example_search.js (≤ 30 lines)
+
+------------------------------------------------------------
+RULESET v0 (ENFORCED)
+------------------------------------------------------------
+1. Max 3 files.
+2. No file > 50 lines.
+3. No custom backend services.
+4. Only use Vertex AI Memory Bank REST endpoints.
+5. No class abstractions; procedural code only.
+6. No optimization or caching.
+7. All memory entries follow this schema:
+
+   {
+     "source": "local",
+     "user": "mitchell",
+     "content": "…",
+     "tags": ["phase0"]
+   }
+
+8. All code is generated ONLY after approval of a 5-line implementation plan.
+9. Composer 1 may NOT introduce new infrastructure.
+10. All operations must reference scraped Vertex AI docs located at:
+    origin-docs/Vertex-AI-Agent-Builder-112925/vertex-ai-agent-builder-documentation.json
+11. All prompts must be minimal and single-purpose.
+12. Phase 0 ends only upon successful round-trip memory retrieval.
+
+------------------------------------------------------------
+MILESTONE 1 (PHASE 0 COMPLETE WHEN THESE ARE DONE)
+------------------------------------------------------------
+1. Composer 1 proposes a 5-line plan for implementing memory write + search.
+2. Mitchell approves the plan.
+3. Implement memory_client.js (auth + REST helpers).
+4. Implement example_write.js  (writes test memory).
+5. Implement example_search.js (retrieves same memory).
+6. Verify round-trip success in Cursor terminal.
+
+------------------------------------------------------------
+PHASE EXIT CRITERIA
+------------------------------------------------------------
+- Memory is successfully written to Vertex Memory Bank.
+- Memory is retrievable via search.
+- No architectural drift has occurred.
+- All Phase 0 rules are satisfied.
+
+------------------------------------------------------------
+END OF SPEC (v0)
+------------------------------------------------------------
