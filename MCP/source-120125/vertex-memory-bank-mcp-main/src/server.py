@@ -1,6 +1,7 @@
 """Main server module - Orchestrates the MCP server."""
 
 import logging
+import os
 import sys
 from contextlib import asynccontextmanager
 
@@ -87,3 +88,12 @@ def run():
     except Exception as e:
         logger.error(f"Server error: {e}")
         sys.exit(1)
+
+
+def run_http():
+    """Run the Memory Bank MCP server in HTTP mode."""
+    import uvicorn
+    from .server_http import app
+    
+    port = int(os.getenv("PORT", "8080"))
+    uvicorn.run(app, host="0.0.0.0", port=port, log_level="info")

@@ -102,6 +102,53 @@ Add to your Claude Desktop config (`~/Library/Application Support/Claude/claude_
 }
 ```
 
+## Deploy to Google Cloud Run
+
+The server can be deployed to Google Cloud Run for HTTP-based access. This enables remote MCP clients to connect via HTTP/SSE transport.
+
+### Quick Deployment
+
+1. **Create service account and grant permissions** (see [DEPLOYMENT.md](DEPLOYMENT.md) for details)
+
+2. **Build and deploy**:
+   ```bash
+   cd MCP/source-120125/vertex-memory-bank-mcp-main
+   ./build-and-deploy.sh
+   ```
+
+3. **Configure MCP client** to use the Cloud Run URL:
+   ```json
+   {
+     "mcpServers": {
+       "vertex-memory-bank": {
+         "url": "https://vertex-memory-bank-mcp-xxxxx-uc.a.run.app/sse"
+       }
+     }
+   }
+   ```
+
+### Detailed Deployment Guide
+
+See [DEPLOYMENT.md](DEPLOYMENT.md) for:
+- Step-by-step deployment instructions
+- Service account configuration
+- Environment variable setup
+- Troubleshooting guide
+- Client configuration examples
+
+### Cloud Run Features
+
+- **HTTP/SSE Transport**: Accessible via HTTP endpoints
+- **Auto-scaling**: Automatically scales based on traffic
+- **Health Checks**: Built-in `/health` endpoint
+- **Managed Infrastructure**: No server management required
+- **Environment Variables**: Configured via Cloud Run settings
+
+### Local Development vs Cloud Run
+
+- **Local**: Use stdio transport (default) for local development
+- **Cloud Run**: Use HTTP/SSE transport for production deployments
+
 ## Key Concepts
 
 ### Memory Scope
@@ -190,7 +237,8 @@ vertex-ai-memory-bank-mcp/
 ├── memory_bank_server.py                     # Main entry point
 ├── src/                                       # Modular source code
 │   ├── __init__.py
-│   ├── server.py                             # Server orchestration
+│   ├── server.py                             # Server orchestration (stdio)
+│   ├── server_http.py                         # HTTP server for Cloud Run
 │   ├── tools.py                              # MCP tool implementations
 │   ├── config.py                             # Configuration management
 │   ├── app_state.py                          # Application state
@@ -199,8 +247,13 @@ vertex-ai-memory-bank-mcp/
 ├── examples/                                 # Usage examples
 │   ├── basic_usage.py                        # Basic MCP client usage
 │   ├── automatic_tool_calling.py             # Automatic function calling
-│   └── claude_config.json                    # Claude Desktop config
+│   ├── claude_config.json                    # Claude Desktop config
+│   └── cloud-run-client-config.json          # Cloud Run client config
 ├── get_started_with_memory_bank_mcp.ipynb    # Getting started tutorial
+├── Dockerfile                                # Docker image for Cloud Run
+├── cloud-run.yaml                            # Cloud Run deployment config
+├── build-and-deploy.sh                       # Deployment script
+├── DEPLOYMENT.md                             # Deployment guide
 ├── pyproject.toml                            # Project config (pip & uv)
 ├── requirements.txt                          # Dependencies (pip)
 ├── uv.lock                                   # Lock file (uv)

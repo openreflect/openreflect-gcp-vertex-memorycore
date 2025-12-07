@@ -6,8 +6,10 @@ from typing import Optional
 from dotenv import load_dotenv
 from pydantic import BaseModel, Field
 
-# Load environment variables from .env file
-load_dotenv()
+# Load environment variables from .env file (only if file exists, for local development)
+# Cloud Run uses environment variables directly, so .env is optional
+if os.path.exists(".env"):
+    load_dotenv()
 
 
 class Config(BaseModel):

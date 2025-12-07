@@ -1,0 +1,61 @@
+{
+  "description": "MCP client configuration for Vertex AI Memory Bank MCP Server deployed on Google Cloud Run",
+  "examples": {
+    "cursor_mcp_config": {
+      "comment": "Add this to ~/.cursor/mcp.json",
+      "config": {
+        "mcpServers": {
+          "vertex-memory-bank": {
+            "url": "https://vertex-memory-bank-mcp-xxxxx-uc.a.run.app/sse",
+            "headers": {
+              "Content-Type": "application/json"
+            }
+          }
+        }
+      }
+    },
+    "claude_desktop_config": {
+      "comment": "Add this to Claude Desktop MCP configuration",
+      "config": {
+        "mcpServers": {
+          "vertex-memory-bank": {
+            "url": "https://vertex-memory-bank-mcp-xxxxx-uc.a.run.app/sse",
+            "transport": "sse"
+          }
+        }
+      }
+    },
+    "python_client_example": {
+      "comment": "Python client example using MCP SDK",
+      "code": "from mcp.client.sse import sse_client\nfrom mcp import ClientSession\n\nasync def connect_to_cloud_run():\n    async with sse_client(\n        url=\"https://vertex-memory-bank-mcp-xxxxx-uc.a.run.app/sse\"\n    ) as (read, write):\n        async with ClientSession(read, write) as session:\n            # Initialize the session\n            await session.initialize()\n            \n            # List available tools\n            tools = await session.list_tools()\n            print(f\"Available tools: {tools}\")\n            \n            # Call a tool\n            result = await session.call_tool(\n                \"initialize_memory_bank\",\n                {\n                    \"project_id\": \"directed-asset-479716-f6\",\n                    \"location\": \"us-central1\"\n                }\n            )\n            print(f\"Result: {result}\")"
+    },
+    "curl_example": {
+      "comment": "Test the service with curl",
+      "commands": {
+        "health_check": "curl https://vertex-memory-bank-mcp-xxxxx-uc.a.run.app/health",
+        "sse_endpoint": "curl -X POST https://vertex-memory-bank-mcp-xxxxx-uc.a.run.app/sse \\\n  -H 'Content-Type: application/json' \\\n  -d '{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"initialize\",\"params\":{\"protocolVersion\":\"2024-11-05\",\"capabilities\":{},\"clientInfo\":{\"name\":\"test\",\"version\":\"1.0\"}}}'",
+        "message_endpoint": "curl -X POST https://vertex-memory-bank-mcp-xxxxx-uc.a.run.app/message \\\n  -H 'Content-Type: application/json' \\\n  -d '{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"tools/list\",\"params\":{}}'"
+      }
+    }
+  },
+  "authentication": {
+    "note": "If authentication is enabled on Cloud Run, you'll need to include an Authorization header",
+    "example": {
+      "headers": {
+        "Authorization": "Bearer YOUR_TOKEN"
+      }
+    },
+    "getting_token": "Use gcloud to get an identity token:\ngcloud auth print-identity-token"
+  },
+  "endpoints": {
+    "/": "Root endpoint - returns service information",
+    "/health": "Health check endpoint - returns service status",
+    "/sse": "SSE endpoint for MCP protocol - use for streaming responses",
+    "/message": "Direct JSON-RPC endpoint - use for single request/response"
+  },
+  "replacing_service_url": {
+    "note": "Replace 'xxxxx' in the URL with your actual Cloud Run service URL",
+    "command": "gcloud run services describe vertex-memory-bank-mcp --region us-central1 --project directed-asset-479716-f6 --format 'value(status.url)'"
+  }
+}
+
