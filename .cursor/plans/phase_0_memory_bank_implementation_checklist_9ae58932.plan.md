@@ -1,7 +1,10 @@
 ---
-name: Deploy Vertex AI Memory Bank MCP Server to Google Cloud Run
-overview: ""
-todos: []
+name: Phase 0 Memory Bank Implementation Checklist
+overview: Deploy the Vertex AI Memory Bank MCP server as a containerized HTTP service on Google Cloud Run, enabling remote MCP client access via HTTP transport.
+todos:
+  - id: todo-1764547030842-8l8zpyo7m
+    content: ""
+    status: pending
 ---
 
 # Deploy Vertex AI Memory Bank MCP Server to Google Cloud Run

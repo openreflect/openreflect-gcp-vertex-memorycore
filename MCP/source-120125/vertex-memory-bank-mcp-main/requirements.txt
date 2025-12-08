@@ -13,6 +13,7 @@ google-adk>=1.15.1
 # HTTP server dependencies for Cloud Run
 fastapi>=0.104.0
 uvicorn[standard]>=0.24.0
+httpx>=0.25.0
 
 # Jupyter notebook support (optional)
 jupyter>=1.0.0

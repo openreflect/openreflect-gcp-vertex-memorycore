@@ -43,4 +43,7 @@ class Config(BaseModel):
 
     def is_valid(self) -> bool:
         """Check if configuration is valid for initialization."""
-        return bool(self.project_id or self.api_key)
+        # We require Project ID (or API Key) AND Agent Engine Name for valid operation
+        has_auth = bool(self.project_id or self.api_key)
+        has_engine = bool(self.agent_engine_name)
+        return has_auth and has_engine
