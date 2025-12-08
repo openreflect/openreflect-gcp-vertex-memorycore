@@ -25,6 +25,10 @@ class Config(BaseModel):
     api_key: Optional[str] = Field(
         default=None, description="Google API key for authentication"
     )
+    connector_bearer_token: Optional[str] = Field(
+        default=None,
+        description="Optional bearer token for HTTPS/SSE connector authentication",
+    )
 
     @classmethod
     def from_env(cls) -> "Config":
@@ -34,6 +38,7 @@ class Config(BaseModel):
             location=os.getenv("GOOGLE_CLOUD_LOCATION", "us-central1"),
             agent_engine_name=os.getenv("AGENT_ENGINE_NAME"),
             api_key=os.getenv("GOOGLE_API_KEY"),
+            connector_bearer_token=os.getenv("CONNECTOR_BEARER_TOKEN"),
         )
 
     def is_valid(self) -> bool:

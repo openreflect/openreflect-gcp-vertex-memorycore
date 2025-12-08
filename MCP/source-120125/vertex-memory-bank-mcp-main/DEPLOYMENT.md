@@ -117,6 +117,7 @@ The following environment variables are configured automatically:
 - `GOOGLE_CLOUD_PROJECT`: `directed-asset-479716-f6`
 - `GOOGLE_CLOUD_LOCATION`: `us-central1`
 - `AGENT_ENGINE_NAME`: Optional (can be set to reuse existing engine)
+- `CONNECTOR_BEARER_TOKEN`: Optional bearer token enforced by HTTPS/SSE endpoints for external connectors
 
 ## MCP Client Configuration
 
@@ -130,7 +131,7 @@ Add to your `~/.cursor/mcp.json`:
 {
   "mcpServers": {
     "vertex-memory-bank": {
-      "url": "https://vertex-memory-bank-mcp-xxxxx-uc.a.run.app/sse",
+      "url": "https://vertex-memory-bank-mcp-xxxxx-uc.a.run.app/mcp/stream",
       "headers": {
         "Authorization": "Bearer YOUR_TOKEN"
       }
@@ -139,7 +140,15 @@ Add to your `~/.cursor/mcp.json`:
 }
 ```
 
-Replace `YOUR_TOKEN` with an appropriate authentication token if authentication is enabled.
+Replace `YOUR_TOKEN` with `CONNECTOR_BEARER_TOKEN` if authentication is enabled. The legacy `/sse` path remains available; `/mcp/stream` is recommended for ChatGPT/connector SSE.
+
+### Manifest Endpoint
+
+For connector discovery, the service exposes `/manifest` with basic metadata and listed tools/resources. Example:
+
+```bash
+curl https://vertex-memory-bank-mcp-xxxxx-uc.a.run.app/manifest
+```
 
 ## Troubleshooting
 
@@ -175,6 +184,7 @@ Replace `YOUR_TOKEN` with an appropriate authentication token if authentication 
 
 - Verify the service URL is correct
 - Check firewall rules if accessing from outside GCP
+- If `CONNECTOR_BEARER_TOKEN` is set, include `Authorization: Bearer <token>`
 - Ensure the service is not restricted to authenticated users only (if using `--allow-unauthenticated`)
 
 ## Resource Limits
@@ -208,6 +218,7 @@ Set up alerts in Cloud Monitoring for:
 
 1. **Service Account**: Uses least-privilege IAM roles
 2. **Authentication**: Currently allows unauthenticated access. Consider adding authentication for production.
+   - Set `CONNECTOR_BEARER_TOKEN` to require a bearer token at the HTTPS/SSE layer (separate from GCP IAM)
 3. **Network**: Service is publicly accessible. Consider VPC connector for private access.
 4. **Secrets**: Use Secret Manager for sensitive configuration if needed.
 
