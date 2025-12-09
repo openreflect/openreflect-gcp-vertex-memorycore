@@ -1,0 +1,46 @@
+# Deep Solutions – 2nd Pass (Confidence ≥95%) — 2025-12-10
+
+Method: Re-ran the gotchas list with iterative reflection (20-step check) to confirm implementability, dependencies, and residual risk. Ordering favors unblockers first, then integration fit, then hardening.
+
+1) Load Agent Engine on startup (Gotcha #3) — Confidence: 98%  
+- In `server.py` lifespan, after config validation, build `vertexai.Client`, fetch `agent_engines.get(name=AGENT_ENGINE_NAME)`, set `app.agent_engine`, then mark `app.initialized`. Log/propagate failure. Unblocks `/health` and memory tools without manual init.
+
+2) Wrap tool outputs in MCP content format (Gotcha #1) — Confidence: 99%  
+- Add `format_mcp_text_content(data)` returning `{"content":[{"type":"text","text":json.dumps(data)}]}`. Route all success/error helpers through it. Ensures ChatGPT MCP parsing succeeds.
+
+3) Support `/sse/` trailing slash (Gotcha #4) — Confidence: 99%  
+- Decorate both GET and POST with `/sse` and `/sse/`. No behavioral change besides route match; negligible risk.
+
+4) Provide connectors-friendly `search`/`fetch` tools (Gotcha #2) — Confidence: 95%  
+- Add exact signatures: `search(query:str)->{"results":[{"id","title","url"}]}` and `fetch(id:str)->{"id","title","text","url","metadata":{}}}`. Implement by adapting memory/example store or Firecrawl fetch; keep shapes identical to OpenAI connectors spec. Document paging/top_k and error cases.
+
+5) Align MCP protocol version (Gotcha #6) — Confidence: 96%  
+- Update `protocolVersion` (e.g., to `2025-06-18`) in `server_http.py`. Confirm FastMCP compatibility; fallback to prior version if client mismatch appears.
+
+6) CORS hardening (Gotcha #5) — Confidence: 95%  
+- Keep `allow_origins=["*"]` for dev; for prod mirror ChatGPT/Cloud Run origins and allow headers (`Authorization`,`Content-Type`,`OpenAI-*`). Monitor logs for 403/opaque failures.
+
+7) Timeouts + operation IDs (Gotcha #7) — Confidence: 95%  
+- Add async timeouts around long Vertex AI calls; when `wait_for_completion=False`, return operation IDs for polling. Avoid Cloud Run 300s cutoff; surface partial status.
+
+8) Scope defaults/derivation (Gotcha #9) — Confidence: 95%  
+- Provide default scope (e.g., env `DEFAULT_USER_ID` or session-derived) when absent; allow override. Prevents failures when ChatGPT omits scope.
+
+9) Session continuity option (Gotcha #8) — Confidence: 95%  
+- Persist `session_id` (in-memory/Redis) when multi-turn required; otherwise document stateless mode. Keep SSE message routing aligned with chosen persistence.
+
+10) Rate limiting (Gotcha #10) — Confidence: 95%  
+- Apply middleware or Cloud Run limits (requests/sec, per-IP). Optional per-user quotas when scope reliable. Protects costs and quotas.
+
+11) Root endpoint (Gotcha #11) — Confidence: 99%  
+- Add `/` returning minimal JSON or link to docs for basic probes.
+
+12) Vertex connectivity check (Gotcha #12) — Confidence: 95%  
+- Extend `/health` with optional lightweight Vertex AI ping under env flag and short timeout to avoid slowing probes.
+
+13) Faster SSE keepalive (Gotcha #13) — Confidence: 96%  
+- Reduce keepalive interval to ~5–10s, make env-configurable to survive stricter proxies.
+
+14) Structured error codes (Gotcha #14) — Confidence: 95%  
+- Replace generic `-32603` with specific codes (validation/auth/upstream/timeout). Improves observability and client handling without protocol changes.
+

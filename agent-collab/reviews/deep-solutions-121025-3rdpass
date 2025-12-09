@@ -1,0 +1,46 @@
+# Deep Solutions – 3rd Pass (Confidence Defense) — 2025-12-10
+
+Approach: For each gotcha, defend the 2nd-pass confidence by feasibility (API fit, code touch count), blast radius, observability, and rollback ease. Assumes Vertex AI Agent Builder and FastMCP APIs as documented in `origin-docs/Vertex-AI-Agent-Builder-112925` and MCP content contract.
+
+1) Load Agent Engine on startup — Confidence 98%  
+- Defense: Uses stable `vertexai.Client.agent_engines.get` call; only adds guarded initialization logic in lifespan. Failure is observable via logs/health; rollback is trivial (feature flag). No API ambiguity.
+
+2) Wrap tool outputs in MCP content format — Confidence 99%  
+- Defense: Pure formatting change; MCP spec mandates `content[type=text,text=string]`. No backend dependency; can be unit-tested offline. Zero behavioral risk to logic.
+
+3) Support `/sse/` trailing slash — Confidence 99%  
+- Defense: Adds duplicate route decorators; FastAPI accepts stacked paths. No business logic change; failure modes limited to routing conflicts (unlikely).
+
+4) Connectors `search`/`fetch` tools — Confidence 95%  
+- Defense: Signatures and response shapes fully specified by OpenAI connectors. Implementation can wrap existing memory/example store or Firecrawl; main risk is schema drift, mitigated by strict schema tests. Work is additive; fallback is to disable if mismatch found.
+
+5) Align MCP protocol version — Confidence 96%  
+- Defense: Single constant change to match latest MCP version; low risk if clients accept older values. If incompatibility arises, revertable config toggle.
+
+6) CORS hardening — Confidence 95%  
+- Defense: Standard CORSMiddleware knobs; prod-origin allowlist can be tuned without code change. Failure observable via 403/opaque responses. Minimal code surface.
+
+7) Timeouts + operation IDs — Confidence 95%  
+- Defense: Uses asyncio timeouts and existing operation handles from Vertex AI; pattern already used for long-running ops. Main risk is client-side polling adoption, mitigated by backward-compatible `wait_for_completion` flag.
+
+8) Scope defaults/derivation — Confidence 95%  
+- Defense: Straightforward defaulting (env or session) before calling memory APIs. Risk is mis-scoping data; mitigated by clearly documenting default and allowing explicit override. Easy to feature-flag.
+
+9) Session continuity option — Confidence 95%  
+- Defense: Persistence via in-memory/Redis is standard; stateless mode remains default. Blast radius limited to session-enabled deployments. Observability via session logs.
+
+10) Rate limiting — Confidence 95%  
+- Defense: Can be implemented via middleware or Cloud Run quotas without touching core logic. Failure mode is throttling, visible in responses/logs. Easy rollback by disabling limiter.
+
+11) Root endpoint — Confidence 99%  
+- Defense: Adds a simple FastAPI route returning static JSON. No dependencies; zero logical risk.
+
+12) Vertex connectivity check — Confidence 95%  
+- Defense: Optional lightweight ping under env flag with short timeout; isolates failure to health endpoint only. Rollback by disabling flag.
+
+13) Faster SSE keepalive — Confidence 96%  
+- Defense: Tunable interval; lowering frequency is safe for bandwidth. Risk limited to server load; mitigated by making interval configurable.
+
+14) Structured error codes — Confidence 95%  
+- Defense: Mapping known failure classes to explicit codes/messages; no protocol change to MCP payload container. Risk is misclassification; mitigated by keeping generic fallback and logs.
+

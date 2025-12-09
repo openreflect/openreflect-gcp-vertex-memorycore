@@ -1,0 +1,46 @@
+# Deep Solutions for OpenReflect MCP Gotchas (2025-12-10)
+
+Ordered, viable remedies for the issues listed in `agent-collab/decisions/opus-45-gotchas-analysis-120925-2100.md`.
+
+1) Load Agent Engine on startup (Gotcha #3)  
+- In `server.py` lifespan: after config validation, create the `vertexai.Client` and immediately call `client.agent_engines.get(name=AGENT_ENGINE_NAME)` when the env var is present. Set `app.agent_engine` and `app.initialized` only after success; log failures. This makes `/health` pass and tools usable without manual init.
+
+2) Wrap tool outputs in MCP content format (Gotcha #1)  
+- Add helper `format_mcp_text_content(data)` returning `{"content":[{"type":"text","text":json.dumps(data)}]}`. Update success/error formatters to call it so every tool response matches ChatGPT MCP expectations.
+
+3) Support `/sse/` trailing slash (Gotcha #4)  
+- Decorate both GET and POST handlers with `/sse` and `/sse/` to match OpenAI examples and avoid routing misses.
+
+4) Provide connectors-friendly `search` and `fetch` tools (Gotcha #2)  
+- Add tools with exact signatures: `search(query:str)->{"results":[{"id","title","url"}]}` and `fetch(id:str)->{"id","title","text","url","metadata":{}}`. Implement by mapping to existing memory/example store lookups or lightweight web fetch (Firecrawl MCP) while keeping shapes identical to OpenAI connectors spec.
+
+5) CORS hardening (Gotcha #5)  
+- Keep `allow_origins=["*"]` for dev; for prod, mirror ChatGPT/Cloud Run origins if needed and ensure required headers (`Authorization`,`Content-Type`,`OpenAI-*`) are allowed. Monitor logs for CORS failures.
+
+6) Align MCP protocol version (Gotcha #6)  
+- Update `protocolVersion` in `server_http.py` to the latest supported (e.g., `2025-06-18`) to reduce compatibility risk with ChatGPT/FastMCP.
+
+7) Add timeouts/operation IDs (Gotcha #7)  
+- For long Vertex AI calls (`generate_memories`, `list_memories`, engine init), use async timeouts and, when `wait_for_completion=False`, return operation IDs so clients can poll instead of timing out on Cloud Run.
+
+8) Session continuity option (Gotcha #8)  
+- If multi-turn needed, persist `session_id` state (e.g., in memory or Redis) to track conversation and scope; otherwise document stateless behavior for MVP.
+
+9) Scope defaults and derivation (Gotcha #9)  
+- Provide a sensible default scope when none is supplied (e.g., derive from session or fixed `user_id` env var). Document how clients can override to avoid failures when ChatGPT omits scope.
+
+10) Add rate limiting (Gotcha #10)  
+- Apply middleware or Cloud Run limits (requests/sec, per-IP) to protect costs and quotas. Consider per-user quotas if scope becomes reliable.
+
+11) Root endpoint (Gotcha #11)  
+- Add `/` returning minimal JSON or redirect to docs to satisfy basic probes.
+
+12) Vertex connectivity in health check (Gotcha #12)  
+- Extend `/health` to optionally ping Vertex AI (e.g., lightweight list/get) when `HEALTH_CHECK_PING_VERTEX=true`, guarding with timeout to avoid slowing health probes.
+
+13) Faster SSE keepalive (Gotcha #13)  
+- Lower keepalive interval from 15s to ~5–10s to survive stricter proxies; make configurable via env.
+
+14) Structured error codes (Gotcha #14)  
+- Replace generic `-32603` with specific codes/messages per failure class (validation, auth, upstream, timeout) to aid debugging and client handling.
+
