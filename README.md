@@ -1,1 +1,1 @@
-# openreflect-MCP-v.01-121025
+# openreflect-core-SD-MB-v0.1-112925
