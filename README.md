@@ -1,4 +1,4 @@
-# Vertex AI Memory Bank MCP Project
+# openreflect-core-SD-MB-v0.1-112925
 
 This repository contains the Model Context Protocol (MCP) server for Vertex AI Memory Bank.
 
