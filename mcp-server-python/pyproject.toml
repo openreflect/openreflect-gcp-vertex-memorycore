@@ -1,0 +1,23 @@
+[project]
+name = "vertex-ai-memory-bank-mcp"
+version = "0.1.0"
+description = "Simple MCP server for Vertex AI Memory Bank"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "mcp[cli]>=1.0.0",
+    "google-cloud-aiplatform>=1.118.0",
+    "google-genai>=1.40.0",
+    "pydantic>=2.0.0",
+    "python-dotenv>=1.0.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "jupyter>=1.0.0",
+    "ipykernel>=6.0.0",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"

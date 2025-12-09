@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "vertex-memory-bank": {
+      "url": "https://memory-bank-user-123-xyz.a.run.app/sse",
+      "transport": "sse",
+      "headers": {
+        "Authorization": "Bearer YOUR_SECURE_TOKEN_HERE"
+      }
+    }
+  }
+}

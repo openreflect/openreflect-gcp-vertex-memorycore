@@ -1,0 +1,20 @@
+# Core MCP and Memory Bank dependencies
+mcp[cli]>=1.0.0
+google-cloud-aiplatform>=1.118.0
+vertexai>=1.0.0
+google-genai>=1.40.0
+pydantic>=2.0.0
+python-dotenv>=1.0.0
+
+# Additional dependencies for Gemini integration and ADK
+google-genai>=0.1.0
+google-adk>=1.15.1
+
+# HTTP server dependencies for Cloud Run
+fastapi>=0.104.0
+uvicorn[standard]>=0.24.0
+httpx>=0.25.0
+
+# Jupyter notebook support (optional)
+jupyter>=1.0.0
+ipykernel>=6.0.0
