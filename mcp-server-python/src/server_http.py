@@ -76,21 +76,22 @@ CONNECTOR_BEARER_TOKEN = os.getenv("CONNECTOR_BEARER_TOKEN")
 def _authorize(request: Request) -> Optional[Response]:
     """Optional bearer token auth for connector-facing endpoints."""
     if not CONNECTOR_BEARER_TOKEN:
-        # If not configured, we allow open access (or rely on Cloud Run IAM)
-        # But per plan, we should enforce it if we want security.
-        # If the environment variable is NOT set, we log a warning but proceed (or fail?)
-        # For a secure "per-user" deployment, this token MUST be set.
-        pass
-    else:
-        auth_header = request.headers.get("authorization")
-        expected = f"Bearer {CONNECTOR_BEARER_TOKEN}"
-        if auth_header != expected:
-            logger.warning("Unauthorized request: missing/invalid bearer token")
-            return Response(
-                content=json.dumps({"error": "Unauthorized"}),
-                status_code=401,
-                media_type="application/json",
-            )
+        logger.warning("CONNECTOR_BEARER_TOKEN not set; denying unauthenticated request")
+        return Response(
+            content=json.dumps({"error": "Unauthorized: bearer token not configured"}),
+            status_code=401,
+            media_type="application/json",
+        )
+
+    auth_header = request.headers.get("authorization")
+    expected = f"Bearer {CONNECTOR_BEARER_TOKEN}"
+    if auth_header != expected:
+        logger.warning("Unauthorized request: missing/invalid bearer token")
+        return Response(
+            content=json.dumps({"error": "Unauthorized"}),
+            status_code=401,
+            media_type="application/json",
+        )
     return None
 
 @fastapi_app.get("/health")
@@ -111,7 +112,13 @@ async def health_check():
             media_type="application/json"
         )
 
+@fastapi_app.get("/")
+async def root():
+    """Simple root endpoint for readiness/testing."""
+    return {"status": "ok", "message": "Vertex AI Memory Bank MCP"}
+
 @fastapi_app.get("/sse")
+@fastapi_app.get("/sse/")
 async def sse_get_endpoint(request: Request):
     """Standard MCP SSE endpoint (GET variant)."""
     if (resp := _authorize(request)) is not None:
@@ -119,6 +126,7 @@ async def sse_get_endpoint(request: Request):
     return await handle_sse_connection(request)
 
 @fastapi_app.post("/sse")
+@fastapi_app.post("/sse/")
 async def sse_post_endpoint(request: Request):
     """Standard MCP SSE endpoint (POST variant)."""
     if (resp := _authorize(request)) is not None:
@@ -196,7 +204,7 @@ async def message_endpoint(request: Request, session_id: str = None):
             # MCP clients send this first. FastMCP usually handles it.
             # We return server capabilities.
             result = {
-                "protocolVersion": "2024-11-05",
+                "protocolVersion": "2024-12-01",
                 "capabilities": {
                     "tools": {"listChanged": False},
                     "prompts": {"listChanged": False},

@@ -281,6 +281,40 @@ def register_tools(mcp: FastMCP):
             logger.error(f"Failed to retrieve memories: {e}")
             return format_error_response(str(e))
 
+    @mcp.tool()
+    async def search_memories(
+        scope: Dict[str, str], search_query: str, top_k: int = 5
+    ) -> Dict[str, Any]:
+        """
+        Explicit search tool for memories (Deep Research compatibility).
+
+        Args:
+            scope: User identifier
+            search_query: Query string for similarity search
+            top_k: Max results
+
+        Returns:
+            Memories with similarity scores.
+        """
+        return await retrieve_memories(scope=scope, search_query=search_query, top_k=top_k)
+
+    @mcp.tool()
+    async def fetch_memory(memory_name: str) -> Dict[str, Any]:
+        """
+        Fetch a single memory by resource name.
+        """
+        if not app.is_ready():
+            return format_error_response(
+                "Memory Bank not initialized. Call initialize_memory_bank first."
+            )
+
+        try:
+            memory = app.client.agent_engines.get_memory(name=memory_name)
+            return format_success_response({"memory": format_memory(memory)})
+        except Exception as e:
+            logger.error(f"Failed to fetch memory: {e}")
+            return format_error_response(str(e))
+
     # ========================================================================
     # Memory Management Tools
     # ========================================================================

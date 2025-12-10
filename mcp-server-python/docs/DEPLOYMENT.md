@@ -52,26 +52,27 @@ python provisioning/provision_user.py \
 Service deployed successfully: https://memory-bank-user-123-xyz.a.run.app
 ```
 
-### 3. Connect the MCP Client (Cursor)
+### 3. Connect the MCP Client (ChatGPT web)
 
-Configure Cursor to connect to the new service URL via SSE.
+Configure ChatGPT MCP connector with SSE URL and bearer token:
 
-**File**: `cursor/mcp.json` (or via Cursor Settings)
+- URL: `https://SERVICE_URL/sse`
+- Header: `Authorization: Bearer <token>`
 
-```json
-{
-  "mcpServers": {
-    "memory-bank": {
-      "command": "",
-      "args": [],
-      "env": {},
-      "url": "https://memory-bank-user-123-xyz.a.run.app/sse",
-      "headers": {
-        "Authorization": "Bearer secret-bearer-token-for-user-123"
-      }
-    }
-  }
-}
+Validation curls:
+
+```bash
+# Health
+curl -i https://SERVICE_URL/health
+
+# SSE handshake (expects endpoint event)
+curl -N -H "Authorization: Bearer <token>" https://SERVICE_URL/sse
+
+# JSON-RPC initialize
+curl -X POST https://SERVICE_URL/message \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <token>" \
+  -d '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{}}'
 ```
 
 ## Operational Notes

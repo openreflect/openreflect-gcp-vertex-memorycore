@@ -42,6 +42,20 @@ async def lifespan(server: FastMCP):
                 project=app.config.project_id,
                 location=app.config.location,
             )
+
+            # Attempt to load Agent Engine from environment
+            if app.config.agent_engine_name:
+                try:
+                    app.agent_engine = app.client.agent_engines.get(
+                        name=app.config.agent_engine_name
+                    )
+                    logger.info(
+                        f"Loaded Agent Engine from env: {app.config.agent_engine_name}"
+                    )
+                except Exception as e:
+                    logger.warning(f"Could not load Agent Engine: {e}")
+                    logger.info("Use initialize_memory_bank to create one.")
+
             app.initialized = True
             logger.info("Vertex AI client initialized from environment")
         except Exception as e:
