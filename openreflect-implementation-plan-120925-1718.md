@@ -5,7 +5,7 @@ Assumptions
 - Project defaults: `directed-asset-479716-f6`, region `us-central1` (override if needed).
 - Auth: require `CONNECTOR_BEARER_TOKEN` in production (Authorization: Bearer ...).
 - Config validity: must have (`GOOGLE_CLOUD_PROJECT` or `GOOGLE_API_KEY`) AND `AGENT_ENGINE_NAME`; otherwise server stays uninitialized.
-- Artifacts already exist: `mcp-server-python/Dockerfile`, `deploy/build.sh`, `deploy/cloud-run-template.yaml`, `src/server_http.py` (HTTP/SSE), `examples/user_client_config.json`. Plan `.cursor/plans/phase_0_memory_bank_implementation_checklist_9ae58932.plan.md` is stale; do not recreate those files.
+- Artifacts already exist: `mcp-server-python/Dockerfile`, `deploy/build.sh`, `deploy/cloud-run-template.yaml`, `src/server_http.py` (HTTP/SSE), `examples/user_client_config.json`. The old `.cursor` plan was removed; do not recreate those files.
 
 Steps (concise, numbered)
 1) Verify config/env: Ensure Cloud Run envs include `GOOGLE_CLOUD_PROJECT` (or `GOOGLE_API_KEY`), `GOOGLE_CLOUD_LOCATION`, `AGENT_ENGINE_NAME`, `CONNECTOR_BEARER_TOKEN`; confirm service account has `roles/aiplatform.user` and `roles/run.invoker` (or equivalent).

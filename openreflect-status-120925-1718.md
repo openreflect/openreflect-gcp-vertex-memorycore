@@ -1,9 +1,8 @@
 OpenReflect Status — 2025-12-08
 
-Scope: mcp-server-python (exclude node_modules/.git/generated). Target client: ChatGPT web MCP (SSE `/sse`, JSON-RPC `/message`), not Cursor. Plan file `.cursor/plans/phase_0_memory_bank_implementation_checklist_9ae58932.plan.md` is stale and conflicts with current state.
+Scope: mcp-server-python (exclude node_modules/.git/generated). Target client: ChatGPT web MCP (SSE `/sse`, JSON-RPC `/message`), not Cursor. The old `.cursor` plan was removed; do not reference it.
 
 Per-file findings (only nontrivial)
-- `.cursor/plans/phase_0_memory_bank_implementation_checklist_9ae58932.plan.md`: Stale; asks to create HTTP/Docker/Cloud Run files already present; targets Cursor; file names differ (build-and-deploy.sh vs deploy/build.sh, cloud-run.yaml vs deploy/cloud-run-template.yaml).
 - `mcp-server-python/Dockerfile`: Runs `uvicorn src.server_http:app` on 8080; slim base with build-essential; OK. Consider removing build-essential post-install to reduce image size (already rm lists). Auth/env not enforced here.
 - `mcp-server-python/deploy/build.sh`: Builds/pushes gcr.io/${PROJECT_ID}/vertex-memory-bank-mcp:latest; assumes GCR and PROJECT_ID default; no Artifact Registry option; gcloud auth configure-docker commented.
 - `mcp-server-python/deploy/cloud-run-template.yaml`: Env vars for project/location/AGENT_ENGINE_NAME/CONNECTOR_BEARER_TOKEN; minScale 0/maxScale 1; no concurrency setting; assumes bearer token provided; serviceAccount required.

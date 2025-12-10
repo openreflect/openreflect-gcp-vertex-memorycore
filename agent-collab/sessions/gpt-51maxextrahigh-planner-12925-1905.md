@@ -10,7 +10,7 @@ User asked to analyze `.cursor/plans/phase_0_memory_bank_implementation_checklis
 2) `openreflect-implementation-plan-120925-1718.md`: implementation plan for GPT-5.1 Codex agents with assumptions, numbered hardening/validation steps (build/push, deploy, health/SSE/message curls, JSON-RPC initialize/tools/prompts/tools.call), validation checklist, brief perf/security notes, definition of done, and reflective lean check.
 
 ## Key findings captured
-- Plan is stale/conflicting with current artifacts (HTTP/SSE, Docker, Cloud Run files already exist under different names).
+- Prior `.cursor` plan (now removed) conflicted with current artifacts (HTTP/SSE, Docker, Cloud Run files already exist under different names).
 - Auth currently optional if `CONNECTOR_BEARER_TOKEN` unset; should be enforced for prod.
 - Config validity requires project/api_key + `AGENT_ENGINE_NAME`; without both, server won't initialize.
 - Tests expect a root `/` route that is not implemented; add route or adjust tests.
