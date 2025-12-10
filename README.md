@@ -10,8 +10,6 @@ This repository contains the Model Context Protocol (MCP) server for Vertex AI M
   
 - **`docs/`**: Project documentation and reference specs.
 
-- **`secrets/`**: Local configuration secrets (git-ignored).
-
 ## Getting Started
 
 To deploy the main server, navigate to `mcp-server-python/` and follow the `DEPLOYMENT.md` guide.
