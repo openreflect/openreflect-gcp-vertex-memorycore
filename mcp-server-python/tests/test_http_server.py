@@ -47,7 +47,7 @@ async def test_message_endpoint(base_url: str) -> bool:
                 "id": 1,
                 "method": "initialize",
                 "params": {
-                    "protocolVersion": "2024-11-05",
+                    "protocolVersion": "2024-12-01",
                     "capabilities": {},
                     "clientInfo": {
                         "name": "test-client",
@@ -78,7 +78,7 @@ async def test_sse_endpoint(base_url: str) -> bool:
                 "id": 1,
                 "method": "initialize",
                 "params": {
-                    "protocolVersion": "2024-11-05",
+                    "protocolVersion": "2024-12-01",
                     "capabilities": {},
                     "clientInfo": {
                         "name": "test-client",

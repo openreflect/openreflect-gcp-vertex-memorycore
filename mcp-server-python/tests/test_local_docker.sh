@@ -27,7 +27,7 @@ curl -f http://localhost:8080/ || echo "Root endpoint failed"
 echo "Testing SSE endpoint with initialize message..."
 curl -X POST http://localhost:8080/sse \
   -H "Content-Type: application/json" \
-  -d '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05","capabilities":{},"clientInfo":{"name":"test","version":"1.0"}}}' \
+  -d '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-12-01","capabilities":{},"clientInfo":{"name":"test","version":"1.0"}}}' \
   --max-time 10 || echo "SSE endpoint test failed"
 
 echo "Container logs:"

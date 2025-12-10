@@ -1,6 +1,7 @@
 """Data formatting utilities"""
 
 from datetime import datetime, timedelta, timezone
+import json
 from typing import Any, Dict, List
 
 
@@ -55,39 +56,32 @@ def format_ttl_expiration(ttl_seconds: int) -> str:
     return expiration.isoformat().replace("+00:00", "Z")
 
 
+def _format_mcp_text_content(payload: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Wrap response data in MCP-compatible content envelope.
+    """
+    return {"content": [{"type": "text", "text": json.dumps(payload)}]}
+
+
 def format_error_response(error: str, details: Dict[str, Any] = None) -> Dict[str, Any]:
     """
-    Format error response consistently.
-
-    Args:
-        error: Error message
-        details: Optional additional details
-
-    Returns:
-        Formatted error response
+    Format error response in MCP-compatible structure.
     """
     response = {"status": "error", "error": error}
     if details:
         response["details"] = details
-    return response
+    return _format_mcp_text_content(response)
 
 
 def format_success_response(
     data: Dict[str, Any] = None, message: str = None
 ) -> Dict[str, Any]:
     """
-    Format success response consistently.
-
-    Args:
-        data: Response data
-        message: Optional success message
-
-    Returns:
-        Formatted success response
+    Format success response in MCP-compatible structure.
     """
     response = {"status": "success"}
     if message:
         response["message"] = message
     if data:
         response.update(data)
-    return response
+    return _format_mcp_text_content(response)
