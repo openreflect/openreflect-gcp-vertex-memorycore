@@ -75,14 +75,11 @@ CONNECTOR_BEARER_TOKEN = os.getenv("CONNECTOR_BEARER_TOKEN")
 
 def _authorize(request: Request) -> Optional[Response]:
     """Optional bearer token auth for connector-facing endpoints."""
+    # If no token configured, allow access (MVP/dev open mode).
     if not CONNECTOR_BEARER_TOKEN:
-        logger.warning("CONNECTOR_BEARER_TOKEN not set; denying unauthenticated request")
-        return Response(
-            content=json.dumps({"error": "Unauthorized: bearer token not configured"}),
-            status_code=401,
-            media_type="application/json",
-        )
+        return None
 
+    # Token is configured — enforce bearer auth.
     auth_header = request.headers.get("authorization")
     expected = f"Bearer {CONNECTOR_BEARER_TOKEN}"
     if auth_header != expected:
@@ -97,20 +94,18 @@ def _authorize(request: Request) -> Optional[Response]:
 @fastapi_app.get("/health")
 async def health_check():
     """Health check endpoint for Cloud Run."""
-    if app_state.is_ready():
-        return {"status": "healthy", "initialized": True}
-    elif app_state.config.is_valid():
-        return Response(
-            content=json.dumps({"status": "initializing", "initialized": False}),
-            status_code=503,
-            media_type="application/json"
-        )
-    else:
-        return Response(
-            content=json.dumps({"status": "not_configured", "initialized": False}),
-            status_code=503,
-            media_type="application/json"
-        )
+    status = "healthy" if app_state.is_ready() else "initializing"
+    message = (
+        "Ready"
+        if app_state.is_ready()
+        else "Use initialize_memory_bank to complete setup or set AGENT_ENGINE_NAME"
+    )
+    return {
+        "status": status,
+        "initialized": app_state.is_ready(),
+        "has_agent_engine": app_state.agent_engine is not None,
+        "message": message,
+    }
 
 @fastapi_app.get("/")
 async def root():
