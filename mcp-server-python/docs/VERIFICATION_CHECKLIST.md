@@ -63,7 +63,7 @@ The implementation uses a **subprocess-based stdio bridge**:
 
 ### Cloud Run Configuration
 
-- ✅ Service name: `vertex-memory-bank-mcp`
+- ✅ Service name: `openreflect-mcp`
 - ✅ Region: `us-central1`
 - ✅ Port: 8080
 - ✅ Memory: 1Gi (512Mi minimum)

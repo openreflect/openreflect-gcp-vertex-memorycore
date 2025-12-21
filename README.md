@@ -138,8 +138,8 @@ python -m uvicorn src.server_http:app --port 8080
 cd mcp-server-python
 ./deploy/build.sh
 
-gcloud run deploy vertex-memory-bank-mcp \
-  --image gcr.io/$PROJECT_ID/vertex-memory-bank-mcp:latest \
+gcloud run deploy openreflect-mcp \
+  --image gcr.io/$PROJECT_ID/openreflect-mcp:latest \
   --region us-central1 \
   --allow-unauthenticated
 ```
@@ -154,7 +154,7 @@ In ChatGPT settings, add a custom MCP server:
 
 | Field | Value |
 |-------|-------|
-| **Name** | Vertex Memory Bank |
+| **Name** | OpenReflect |
 | **MCP Server URL** | `https://your-service.a.run.app/sse` |
 | **Authentication** | None |
 

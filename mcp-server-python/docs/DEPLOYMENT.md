@@ -30,7 +30,7 @@ chmod +x build.sh
 ./build.sh
 ```
 
-This pushes the image to: `gcr.io/directed-asset-479716-f6/vertex-memory-bank-mcp:latest`
+This pushes the image to: `gcr.io/directed-asset-479716-f6/openreflect-mcp:latest`
 
 ### 2. Provision a User Service
 
@@ -41,7 +41,7 @@ Use the provisioning script to spin up a dedicated service for a user.
 python provisioning/provision_user.py \
   --project directed-asset-479716-f6 \
   --user-id "user_123" \
-  --image "gcr.io/directed-asset-479716-f6/vertex-memory-bank-mcp:latest" \
+  --image "gcr.io/directed-asset-479716-f6/openreflect-mcp:latest" \
   --service-account "vertex-memory-bank-mcp-sa@directed-asset-479716-f6.iam.gserviceaccount.com" \
   --engine-name "projects/directed-asset-479716-f6/locations/us-central1/collections/default_collection/engines/agent-engine-user-123" \
   --token "secret-bearer-token-for-user-123"
@@ -49,7 +49,7 @@ python provisioning/provision_user.py \
 
 **Output**:
 ```text
-Service deployed successfully: https://memory-bank-user-123-xyz.a.run.app
+Service deployed successfully: https://openreflect-user-123-xyz.a.run.app
 ```
 
 ### 3. Connect the MCP Client (ChatGPT web)

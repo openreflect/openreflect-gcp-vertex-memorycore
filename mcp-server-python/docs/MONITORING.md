@@ -9,7 +9,7 @@ This guide covers monitoring and alerting configuration for the Cloud Run deploy
 View logs using gcloud CLI:
 
 ```bash
-gcloud run services logs read vertex-memory-bank-mcp \
+gcloud run services logs read openreflect-mcp \
   --region us-central1 \
   --project directed-asset-479716-f6 \
   --limit 50
@@ -20,7 +20,7 @@ gcloud run services logs read vertex-memory-bank-mcp \
 Stream logs in real-time:
 
 ```bash
-gcloud run services logs tail vertex-memory-bank-mcp \
+gcloud run services logs tail openreflect-mcp \
   --region us-central1 \
   --project directed-asset-479716-f6
 ```
@@ -31,7 +31,7 @@ Filter logs by severity:
 
 ```bash
 gcloud logging read "resource.type=cloud_run_revision AND \
-  resource.labels.service_name=vertex-memory-bank-mcp AND \
+  resource.labels.service_name=openreflect-mcp AND \
   severity>=ERROR" \
   --limit 50 \
   --project directed-asset-479716-f6
@@ -73,7 +73,7 @@ You can create custom metrics for MCP-specific operations:
 
 ```bash
 # Example: Track memory operations
-gcloud logging write vertex-memory-bank-mcp-metrics \
+gcloud logging write openreflect-mcp-metrics \
   '{"operation":"generate_memories","duration_ms":1500,"success":true}' \
   --project directed-asset-479716-f6
 ```
@@ -142,7 +142,7 @@ Example MQL queries for dashboard widgets:
 ```
 fetch cloud_run_revision
 | metric 'run.googleapis.com/request_count'
-| filter resource.service_name == 'vertex-memory-bank-mcp'
+| filter resource.service_name == 'openreflect-mcp'
 | group_by 1m, [value_request_count_sum: sum(value.request_count)]
 | every 1m
 ```
@@ -151,7 +151,7 @@ fetch cloud_run_revision
 ```
 fetch cloud_run_revision
 | metric 'run.googleapis.com/request_latencies'
-| filter resource.service_name == 'vertex-memory-bank-mcp'
+| filter resource.service_name == 'openreflect-mcp'
 | group_by 1m, [value_latency_p95: percentile(value.latency, 95)]
 | every 1m
 ```
@@ -160,7 +160,7 @@ fetch cloud_run_revision
 ```
 fetch cloud_run_revision
 | metric 'run.googleapis.com/request_count'
-| filter resource.service_name == 'vertex-memory-bank-mcp'
+| filter resource.service_name == 'openreflect-mcp'
 | filter metric.response_code_class == '5xx'
 | group_by 1m, [value_error_count_sum: sum(value.request_count)]
 | every 1m
@@ -175,7 +175,7 @@ Create log-based metrics for MCP operations:
 gcloud logging metrics create mcp_generate_memories \
   --description="Count of memory generation operations" \
   --log-filter='resource.type="cloud_run_revision" AND
-    resource.labels.service_name="vertex-memory-bank-mcp" AND
+    resource.labels.service_name="openreflect-mcp" AND
     jsonPayload.operation="generate_memories"' \
   --project directed-asset-479716-f6
 
@@ -183,7 +183,7 @@ gcloud logging metrics create mcp_generate_memories \
 gcloud logging metrics create mcp_retrieve_memories \
   --description="Count of memory retrieval operations" \
   --log-filter='resource.type="cloud_run_revision" AND
-    resource.labels.service_name="vertex-memory-bank-mcp" AND
+    resource.labels.service_name="openreflect-mcp" AND
     jsonPayload.operation="retrieve_memories"' \
   --project directed-asset-479716-f6
 ```
@@ -196,7 +196,7 @@ Target: 99.9% availability (less than 43 minutes downtime per month)
 
 ```bash
 gcloud alpha monitoring slo create \
-  --service=vertex-memory-bank-mcp \
+  --service=openreflect-mcp \
   --slo-id=availability-slo \
   --display-name="Availability SLO" \
   --goal=0.999 \
@@ -210,7 +210,7 @@ Target: 95% of requests complete in under 2 seconds
 
 ```bash
 gcloud alpha monitoring slo create \
-  --service=vertex-memory-bank-mcp \
+  --service=openreflect-mcp \
   --slo-id=latency-slo \
   --display-name="Latency SLO" \
   --goal=0.95 \
@@ -225,7 +225,7 @@ gcloud alpha monitoring slo create \
 1. Check logs for error patterns:
    ```bash
    gcloud logging read "resource.type=cloud_run_revision AND \
-     resource.labels.service_name=vertex-memory-bank-mcp AND \
+     resource.labels.service_name=openreflect-mcp AND \
      severity>=ERROR" \
      --limit 100 \
      --format json \

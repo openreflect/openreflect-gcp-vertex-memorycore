@@ -1,6 +1,6 @@
 {
   "mcpServers": {
-    "vertex-ai-memory-bank": {
+    "openreflect": {
       "command": "python",
       "args": ["/absolute/path/to/memory_bank_server.py"],
       "env": {

@@ -14,7 +14,7 @@ This guide covers end-to-end testing of the MCP server deployed on Cloud Run.
 ### 1. Health Check
 
 ```bash
-SERVICE_URL="https://vertex-memory-bank-mcp-xxxxx-uc.a.run.app"
+SERVICE_URL="https://openreflect-mcp-xxxxx-uc.a.run.app"
 
 # Test health endpoint
 curl ${SERVICE_URL}/health
@@ -230,7 +230,7 @@ if __name__ == "__main__":
 
 ```bash
 # Set service URL
-export SERVICE_URL="https://vertex-memory-bank-mcp-xxxxx-uc.a.run.app"
+export SERVICE_URL="https://openreflect-mcp-xxxxx-uc.a.run.app"
 
 # Run tests
 python test_integration.py ${SERVICE_URL}
@@ -429,7 +429,7 @@ async def load_test(base_url: str, num_requests: int = 100):
         print(f"Duration: {duration:.2f}s")
         print(f"Requests/sec: {num_requests/duration:.2f}")
 
-asyncio.run(load_test("https://vertex-memory-bank-mcp-xxxxx-uc.a.run.app", 100))
+asyncio.run(load_test("https://openreflect-mcp-xxxxx-uc.a.run.app", 100))
 ```
 
 ## Troubleshooting
@@ -438,7 +438,7 @@ asyncio.run(load_test("https://vertex-memory-bank-mcp-xxxxx-uc.a.run.app", 100))
 
 1. **Connection Timeout**
    - Check service URL is correct
-   - Verify service is running: `gcloud run services describe vertex-memory-bank-mcp`
+   - Verify service is running: `gcloud run services describe openreflect-mcp`
    - Check firewall rules
 
 2. **Authentication Errors**
@@ -460,18 +460,18 @@ asyncio.run(load_test("https://vertex-memory-bank-mcp-xxxxx-uc.a.run.app", 100))
 
 ```bash
 # Check service status
-gcloud run services describe vertex-memory-bank-mcp \
+gcloud run services describe openreflect-mcp \
   --region us-central1 \
   --project directed-asset-479716-f6
 
 # View recent logs
-gcloud run services logs read vertex-memory-bank-mcp \
+gcloud run services logs read openreflect-mcp \
   --region us-central1 \
   --project directed-asset-479716-f6 \
   --limit 50
 
 # Test health endpoint
-curl -v https://vertex-memory-bank-mcp-xxxxx-uc.a.run.app/health
+curl -v https://openreflect-mcp-xxxxx-uc.a.run.app/health
 ```
 
 ## Test Checklist

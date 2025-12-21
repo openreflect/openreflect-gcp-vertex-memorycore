@@ -1,7 +1,7 @@
 # PowerShell test script for local Docker container testing
 
 Write-Host "Building Docker image locally..."
-docker build -t vertex-memory-bank-mcp:local .
+docker build -t openreflect-mcp:local .
 
 Write-Host "Starting container..."
 $containerId = docker run -d `
@@ -9,7 +9,7 @@ $containerId = docker run -d `
   -e GOOGLE_CLOUD_PROJECT=directed-asset-479716-f6 `
   -e GOOGLE_CLOUD_LOCATION=us-central1 `
   -e PORT=8080 `
-  vertex-memory-bank-mcp:local
+  openreflect-mcp:local
 
 Write-Host "Container started with ID: $containerId"
 Write-Host "Waiting for container to be ready..."
