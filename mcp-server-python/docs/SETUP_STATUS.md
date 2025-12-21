@@ -65,6 +65,7 @@ All prerequisites are met. You can now:
      --region us-central1 \
      --service-account cloud-run-openreflect-112925@directed-asset-479716-f6.iam.gserviceaccount.com \
      --allow-unauthenticated \
+     --timeout 3600 \
      --set-env-vars GOOGLE_CLOUD_PROJECT=directed-asset-479716-f6,GOOGLE_CLOUD_LOCATION=us-central1
    ```
 

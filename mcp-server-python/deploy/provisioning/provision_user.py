@@ -38,6 +38,7 @@ def deploy_user_service(project_id: str, region: str, user_id: str, image: str, 
     service.template.containers = [container]
     service.template.service_account = service_account
     service.template.scaling.max_instance_count = 1
+    service.template.timeout = "3600s"  # 1 hour timeout for SSE connections
     
     # Check if exists
     try:

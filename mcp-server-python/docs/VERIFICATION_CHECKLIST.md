@@ -68,7 +68,7 @@ The implementation uses a **subprocess-based stdio bridge**:
 - ✅ Port: 8080
 - ✅ Memory: 1Gi (512Mi minimum)
 - ✅ CPU: 1 vCPU
-- ✅ Timeout: 300s
+- ✅ Timeout: 3600s (1 hour for SSE connections)
 - ✅ Max instances: 10
 - ✅ Environment variables configured
 

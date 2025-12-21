@@ -141,7 +141,8 @@ cd mcp-server-python
 gcloud run deploy openreflect-mcp \
   --image gcr.io/$PROJECT_ID/openreflect-mcp:latest \
   --region us-central1 \
-  --allow-unauthenticated
+  --allow-unauthenticated \
+  --timeout 3600
 ```
 
 See `mcp-server-python/docs/DEPLOYMENT.md` for detailed instructions.
