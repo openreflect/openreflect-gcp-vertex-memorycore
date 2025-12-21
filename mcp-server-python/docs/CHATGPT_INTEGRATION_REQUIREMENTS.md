@@ -173,7 +173,7 @@ Before testing with ChatGPT web interface:
 2. **Add Connector**:
    - In Connectors tab, click "Create"
    - Fill in connector details:
-     - Name: "Vertex Memory Bank" (or your preferred name)
+     - Name: "OpenReflect" (or your preferred name)
      - MCP Server URL: `https://your-service.a.run.app/sse`
      - Authentication: Bearer token (if using `CONNECTOR_BEARER_TOKEN`)
 

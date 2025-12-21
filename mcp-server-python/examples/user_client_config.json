@@ -1,6 +1,6 @@
 {
   "mcpServers": {
-    "vertex-memory-bank": {
+    "openreflect": {
       "url": "https://memory-bank-user-123-xyz.a.run.app/sse",
       "transport": "sse",
       "headers": {

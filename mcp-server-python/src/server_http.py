@@ -60,7 +60,7 @@ async def lifespan(app: FastAPI):
             yield
 
 # Create FastAPI app
-fastapi_app = FastAPI(title="Vertex AI Memory Bank MCP Server", lifespan=lifespan)
+fastapi_app = FastAPI(title="OpenReflect MCP Server", lifespan=lifespan)
 
 fastapi_app.add_middleware(
     CORSMiddleware,
@@ -110,7 +110,7 @@ async def health_check():
 @fastapi_app.get("/")
 async def root():
     """Simple root endpoint for readiness/testing."""
-    return {"status": "ok", "message": "Vertex AI Memory Bank MCP"}
+    return {"status": "ok", "message": "OpenReflect MCP"}
 
 @fastapi_app.get("/sse")
 @fastapi_app.get("/sse/")

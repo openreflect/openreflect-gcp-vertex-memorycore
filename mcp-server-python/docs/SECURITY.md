@@ -52,7 +52,7 @@ gcloud ai-platform models list \
 **Recommendations:**
 1. **Use VPC Connector** for private access:
    ```bash
-   gcloud run services update vertex-memory-bank-mcp \
+   gcloud run services update openreflect-mcp \
      --vpc-connector=CONNECTOR_NAME \
      --vpc-egress=private-ranges-only \
      --region us-central1 \
@@ -61,7 +61,7 @@ gcloud ai-platform models list \
 
 2. **Enable Authentication** for production:
    ```bash
-   gcloud run services update vertex-memory-bank-mcp \
+   gcloud run services update openreflect-mcp \
      --no-allow-unauthenticated \
      --region us-central1 \
      --project directed-asset-479716-f6
@@ -69,7 +69,7 @@ gcloud ai-platform models list \
 
 3. **Restrict Ingress** to specific sources if needed:
    ```bash
-   gcloud run services update vertex-memory-bank-mcp \
+   gcloud run services update openreflect-mcp \
      --ingress=internal \
      --region us-central1 \
      --project directed-asset-479716-f6
@@ -102,7 +102,7 @@ gcloud ai-platform models list \
 2. **Use Cloud IAM** for authentication:
    ```bash
    # Require authentication
-   gcloud run services update vertex-memory-bank-mcp \
+   gcloud run services update openreflect-mcp \
      --no-allow-unauthenticated \
      --region us-central1 \
      --project directed-asset-479716-f6
@@ -134,7 +134,7 @@ gcloud ai-platform models list \
      --project directed-asset-479716-f6
    
    # Mount secret in Cloud Run
-   gcloud run services update vertex-memory-bank-mcp \
+   gcloud run services update openreflect-mcp \
      --update-secrets API_KEY=api-key:latest \
      --region us-central1 \
      --project directed-asset-479716-f6
@@ -153,7 +153,7 @@ gcloud ai-platform models list \
 **Recommendations:**
 1. **Scan images for vulnerabilities**:
    ```bash
-   gcloud container images scan gcr.io/directed-asset-479716-f6/vertex-memory-bank-mcp:latest
+   gcloud container images scan gcr.io/directed-asset-479716-f6/openreflect-mcp:latest
    ```
 
 2. **Use distroless images** for better security:
@@ -182,7 +182,7 @@ gcloud ai-platform models list \
    ```bash
    # Check logs for sensitive data
    gcloud logging read "resource.type=cloud_run_revision AND \
-     resource.labels.service_name=vertex-memory-bank-mcp" \
+     resource.labels.service_name=openreflect-mcp" \
      --limit 100 \
      --format json \
      --project directed-asset-479716-f6 | grep -i "password\|token\|key\|secret"
@@ -283,7 +283,7 @@ gcloud logging sinks create data-access-audit \
 
 3. **Container Scanning**:
    ```bash
-   gcloud container images scan gcr.io/directed-asset-479716-f6/vertex-memory-bank-mcp:latest
+   gcloud container images scan gcr.io/directed-asset-479716-f6/openreflect-mcp:latest
    ```
 
 ## Incident Response

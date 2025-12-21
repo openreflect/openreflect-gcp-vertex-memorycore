@@ -60,8 +60,8 @@ All prerequisites are met. You can now:
 
 2. **Deploy to Cloud Run:**
    ```bash
-   gcloud run deploy vertex-memory-bank-mcp \
-     --image gcr.io/directed-asset-479716-f6/vertex-memory-bank-mcp:latest \
+   gcloud run deploy openreflect-mcp \
+     --image gcr.io/directed-asset-479716-f6/openreflect-mcp:latest \
      --region us-central1 \
      --service-account cloud-run-openreflect-112925@directed-asset-479716-f6.iam.gserviceaccount.com \
      --allow-unauthenticated \
@@ -73,7 +73,7 @@ All prerequisites are met. You can now:
    python deploy/provisioning/provision_user.py \
      --project directed-asset-479716-f6 \
      --user-id "test-user" \
-     --image "gcr.io/directed-asset-479716-f6/vertex-memory-bank-mcp:latest" \
+     --image "gcr.io/directed-asset-479716-f6/openreflect-mcp:latest" \
      --service-account "cloud-run-openreflect-112925@directed-asset-479716-f6.iam.gserviceaccount.com" \
      --engine-name "" \
      --token "your-bearer-token"

@@ -4,7 +4,7 @@
 set -e
 
 echo "Building Docker image locally..."
-docker build -t vertex-memory-bank-mcp:local .
+docker build -t openreflect-mcp:local .
 
 echo "Starting container..."
 CONTAINER_ID=$(docker run -d \
@@ -12,7 +12,7 @@ CONTAINER_ID=$(docker run -d \
   -e GOOGLE_CLOUD_PROJECT=directed-asset-479716-f6 \
   -e GOOGLE_CLOUD_LOCATION=us-central1 \
   -e PORT=8080 \
-  vertex-memory-bank-mcp:local)
+  openreflect-mcp:local)
 
 echo "Container started with ID: $CONTAINER_ID"
 echo "Waiting for container to be ready..."

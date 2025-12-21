@@ -79,7 +79,7 @@ def create_server() -> FastMCP:
     """
     # Create the server
     mcp = FastMCP(
-        "Vertex AI Memory Bank",
+        "OpenReflect MCP",
         lifespan=lifespan
     )
     

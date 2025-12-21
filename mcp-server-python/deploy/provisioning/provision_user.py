@@ -13,7 +13,7 @@ def deploy_user_service(project_id: str, region: str, user_id: str, image: str, 
     """Deploys a new Cloud Run service for a specific user."""
     
     # Sanitize user_id for service name (must be lowercase, hyphens)
-    service_name = f"memory-bank-{user_id.lower().replace('_', '-')}"
+    service_name = f"openreflect-{user_id.lower().replace('_', '-')}"
     parent = f"projects/{project_id}/locations/{region}"
     service_id = f"{parent}/services/{service_name}"
     

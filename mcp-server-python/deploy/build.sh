@@ -3,11 +3,11 @@ set -e
 
 # Configuration
 PROJECT_ID="directed-asset-479716-f6"
-IMAGE_NAME="vertex-memory-bank-mcp"
+IMAGE_NAME="openreflect-mcp"
 TAG="latest"
 
 echo "========================================================"
-echo "Building Golden Image for Vertex AI Memory Bank MCP"
+echo "Building Golden Image for OpenReflect MCP"
 echo "Project: ${PROJECT_ID}"
 echo "Image:   gcr.io/${PROJECT_ID}/${IMAGE_NAME}:${TAG}"
 echo "========================================================"
