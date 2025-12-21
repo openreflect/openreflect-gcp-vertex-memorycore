@@ -52,7 +52,18 @@ python provisioning/provision_user.py \
 Service deployed successfully: https://openreflect-user-123-xyz.a.run.app
 ```
 
-### 3. Connect the MCP Client (ChatGPT web)
+### 3. Configure Timeout (Important for SSE)
+
+SSE connections require longer timeouts. Set timeout to 3600 seconds (1 hour):
+
+```bash
+gcloud run services update SERVICE_NAME \
+  --timeout 3600 \
+  --region us-central1 \
+  --project directed-asset-479716-f6
+```
+
+### 4. Connect the MCP Client (ChatGPT web)
 
 Configure ChatGPT MCP connector with SSE URL and bearer token:
 
