@@ -75,6 +75,11 @@ curl -X POST https://SERVICE_URL/message \
   -d '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{}}'
 ```
 
+### Agent Engine Provisioning
+- If `AGENT_ENGINE_NAME` is set: server uses the existing Agent Engine (fast startup).
+- If not set: server still starts; call `initialize_memory_bank` to create the engine dynamically (first call may add latency).
+- Health returns 200 and reports `initialized` and `has_agent_engine` to show readiness state.
+
 ## Operational Notes
 
 ### Cold Starts
