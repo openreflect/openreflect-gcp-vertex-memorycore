@@ -30,6 +30,9 @@ logger = logging.getLogger(__name__)
 # Initialize the MCP server instance globally
 mcp_server = create_server()
 
+# Active SSE sessions: session_id -> outbound JSON-RPC message queue
+_sse_sessions: Dict[str, "asyncio.Queue[Dict[str, Any]]"] = {}
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Manage FastAPI and FastMCP lifecycles."""
@@ -65,7 +68,7 @@ fastapi_app = FastAPI(title="OpenReflect MCP Server", lifespan=lifespan)
 fastapi_app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
-    allow_credentials=True,
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -126,35 +129,89 @@ async def sse_post_endpoint(request: Request):
     """Standard MCP SSE endpoint (POST variant)."""
     if (resp := _authorize(request)) is not None:
         return resp
-    return await handle_sse_connection(request)
+    # OpenAI's connector client POSTs an initial JSON-RPC message to /sse.
+    # We read it (if present) and stream the response back over SSE.
+    initial_request: Optional[Dict[str, Any]] = None
+    try:
+        initial_request = await request.json()
+    except Exception:
+        initial_request = None
 
-async def handle_sse_connection(request: Request):
+    return await handle_sse_connection(request, initial_request=initial_request)
+
+async def handle_sse_connection(
+    request: Request,
+    initial_request: Optional[Dict[str, Any]] = None,
+):
     """Shared handler for SSE connection."""
+
+    def _first_forwarded_value(value: Optional[str]) -> Optional[str]:
+        """Return the first comma-separated value from a forwarded header."""
+        if not value:
+            return None
+        return value.split(",")[0].strip()
+
+    def _get_external_base_url(request: Request) -> str:
+        """
+        Construct an externally-reachable base URL (scheme://host) for Cloud Run.
+
+        Cloud Run terminates TLS at the edge; inside the container the request scheme
+        is often seen as http. ChatGPT expects the SSE 'endpoint' event to advertise
+        an https:// message URL, so we prefer proxy headers when present.
+        """
+        proto = _first_forwarded_value(request.headers.get("x-forwarded-proto"))
+        host = (
+            _first_forwarded_value(request.headers.get("x-forwarded-host"))
+            or request.headers.get("host")
+        )
+        if proto and host:
+            return f"{proto}://{host}".rstrip("/")
+        # Fallback to Starlette's computed base_url
+        return str(request.base_url).rstrip("/")
     
-    async def event_stream() -> AsyncGenerator[str, None]:
+    async def event_stream(
+        initial_request: Optional[Dict[str, Any]] = None,
+    ) -> AsyncGenerator[str, None]:
         try:
             # Simple unique session ID
             session_id = str(uuid.uuid4())
             logger.info(f"New SSE session: {session_id}")
 
+            queue: asyncio.Queue[Dict[str, Any]] = asyncio.Queue()
+            _sse_sessions[session_id] = queue
+
             # Construct the absolute URL for the /message endpoint
             # We use the request's base URL + /message
             # We also append session_id for tracking
-            message_endpoint = f"{request.base_url}message?session_id={session_id}"
+            base_url = _get_external_base_url(request)
+            message_endpoint = f"{base_url}/message?session_id={session_id}"
             
             # The MCP spec says the first event is the endpoint URL
             yield f"event: endpoint\ndata: {message_endpoint}\n\n"
 
-            # Keep the connection open with keepalives
+            # If the client POSTed an initial JSON-RPC message to /sse (OpenAI does),
+            # process it and send the response as an SSE message event.
+            if initial_request:
+                if (initial_resp := await _handle_jsonrpc(initial_request)) is not None:
+                    await queue.put(initial_resp)
+
+            # Stream queued JSON-RPC responses over SSE, with keepalives.
             while True:
-                await asyncio.sleep(15)
-                yield ": keepalive\n\n"
+                try:
+                    msg = await asyncio.wait_for(queue.get(), timeout=15)
+                    payload = json.dumps(msg, separators=(",", ":"), ensure_ascii=False)
+                    yield f"event: message\ndata: {payload}\n\n"
+                except asyncio.TimeoutError:
+                    yield ": keepalive\n\n"
                 
         except asyncio.CancelledError:
             logger.info(f"SSE session disconnected: {session_id}")
+        finally:
+            if "session_id" in locals():
+                _sse_sessions.pop(session_id, None)
 
     return StreamingResponse(
-        event_stream(),
+        event_stream(initial_request),
         media_type="text/event-stream",
         headers={
             "Cache-Control": "no-cache",
@@ -162,6 +219,139 @@ async def handle_sse_connection(request: Request):
             "X-Accel-Buffering": "no",
         },
     )
+
+async def _handle_jsonrpc(body: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+    """
+    Process a JSON-RPC 2.0 request and return a JSON-RPC response object.
+
+    Returns None for notifications that require no response.
+    """
+    # Check for JSON-RPC 2.0 structure
+    if not isinstance(body, dict) or body.get("jsonrpc") != "2.0":
+        raise ValueError("Invalid JSON-RPC request")
+
+    method = body.get("method")
+    msg_id = body.get("id")
+    params = body.get("params", {})
+
+    logger.info(f"Received message: method={method} id={msg_id}")
+
+    # Manual routing to FastMCP methods
+    result = None
+    error = None
+
+    if method == "ping":
+        result = {}
+        
+    elif method == "initialize":
+        requested_protocol_version: Optional[str] = None
+        if isinstance(params, dict):
+            requested_protocol_version = params.get("protocolVersion")
+
+        protocol_version = requested_protocol_version or "2024-11-05"
+        if requested_protocol_version and requested_protocol_version != protocol_version:
+            logger.info(
+                "Client requested protocolVersion=%s; responding with %s",
+                requested_protocol_version,
+                protocol_version,
+            )
+        else:
+            logger.info("Initialize requested protocolVersion=%s", protocol_version)
+
+        result = {
+            # Echo the client's requested protocolVersion when provided to maximize
+            # compatibility with strict clients.
+            "protocolVersion": protocol_version,
+            "capabilities": {
+                "tools": {"listChanged": False},
+                "prompts": {"listChanged": False},
+                # Some OpenAI clients assume `resources` exists in capabilities.
+                # We advertise an empty/unsupported resources surface and implement
+                # `resources/list` as an empty list for compatibility.
+                "resources": {"listChanged": False, "subscribe": False},
+                "logging": {},
+            },
+            "serverInfo": {
+                "name": mcp_server.name,
+                "version": "0.1.0"
+            }
+        }
+
+    elif method == "notifications/initialized":
+        return None
+
+    elif method == "tools/list":
+        tools = await mcp_server.list_tools()
+        tools_payload = tools.model_dump() if hasattr(tools, "model_dump") else tools
+        if isinstance(tools_payload, dict) and "tools" in tools_payload:
+            result = tools_payload
+        elif isinstance(tools_payload, list):
+            result = {"tools": tools_payload}
+        else:
+            result = {"tools": tools_payload}
+
+    elif method == "tools/call":
+        name = params.get("name")
+        args = params.get("arguments", {})
+        
+        tool_result = await mcp_server.call_tool(name, args)
+        if (
+            isinstance(tool_result, (list, tuple))
+            and len(tool_result) == 2
+            and isinstance(tool_result[0], list)
+        ):
+            result = {"content": tool_result[0]}
+        elif hasattr(tool_result, "model_dump"):
+            result = tool_result.model_dump()
+        else:
+            result = tool_result
+            
+    elif method == "prompts/list":
+        prompts = await mcp_server.list_prompts()
+        prompts_payload = (
+            prompts.model_dump() if hasattr(prompts, "model_dump") else prompts
+        )
+        if isinstance(prompts_payload, dict) and "prompts" in prompts_payload:
+            result = prompts_payload
+        elif isinstance(prompts_payload, list):
+            result = {"prompts": prompts_payload}
+        else:
+            result = {"prompts": prompts_payload}
+            
+    elif method == "prompts/get":
+        name = params.get("name")
+        args = params.get("arguments", {})
+        prompt_result = await mcp_server.get_prompt(name, args)
+        if hasattr(prompt_result, "model_dump"):
+            result = prompt_result.model_dump()
+        else:
+            result = prompt_result
+
+    elif method == "resources/list":
+        # Return no resources (we don't expose resources today), but avoid client crashes.
+        result = {"resources": []}
+
+    elif method == "resources/read":
+        error = {"code": -32601, "message": "Method not found: resources/read"}
+
+    elif method == "resources/subscribe":
+        error = {"code": -32601, "message": "Method not found: resources/subscribe"}
+
+    elif method == "resources/unsubscribe":
+        error = {"code": -32601, "message": "Method not found: resources/unsubscribe"}
+
+    else:
+        error = {"code": -32601, "message": f"Method not found: {method}"}
+
+    response: Dict[str, Any] = {"jsonrpc": "2.0"}
+    if msg_id is not None:
+        response["id"] = msg_id
+
+    if error:
+        response["error"] = error
+    else:
+        response["result"] = result
+    return response
 
 @fastapi_app.post("/message")
 async def message_endpoint(request: Request, session_id: str = None):
@@ -177,106 +367,26 @@ async def message_endpoint(request: Request, session_id: str = None):
         raise HTTPException(status_code=400, detail="Invalid JSON")
 
     try:
-        # Check for JSON-RPC 2.0 structure
-        if not isinstance(body, dict) or body.get("jsonrpc") != "2.0":
-            raise ValueError("Invalid JSON-RPC request")
+        resp = await _handle_jsonrpc(body)
 
-        method = body.get("method")
-        msg_id = body.get("id")
-        params = body.get("params", {})
+        # If this request is associated with an active SSE session, deliver the
+        # response over SSE and return a small ack.
+        if session_id and session_id in _sse_sessions:
+            if resp is not None:
+                await _sse_sessions[session_id].put(resp)
+            return Response(status_code=202)
 
-        logger.info(f"Received message: method={method} id={msg_id}")
-
-        # Manual routing to FastMCP methods
-        result = None
-        error = None
-
-        if method == "ping":
-            result = {}
-            
-        elif method == "initialize":
-            # Handle initialize request
-            # MCP clients send this first. FastMCP usually handles it.
-            # We return server capabilities.
-            result = {
-                "protocolVersion": "2024-12-01",
-                "capabilities": {
-                    "tools": {"listChanged": False},
-                    "prompts": {"listChanged": False},
-                    "resources": {"listChanged": False, "subscribe": False},
-                    "logging": {},
-                },
-                "serverInfo": {
-                    "name": mcp_server.name,
-                    "version": "0.1.0"
-                }
-            }
-
-        elif method == "notifications/initialized":
-            # Client confirming initialization
-            # No response needed for notification
+        # Fallback: no SSE session found, return JSON-RPC response directly.
+        if resp is None:
             return Response(status_code=200)
-
-        elif method == "tools/list":
-            tools = await mcp_server.list_tools()
-            # tools is usually a Pydantic model or dict
-            # We need to ensure it's serializable
-            if hasattr(tools, "model_dump"):
-                 result = tools.model_dump()
-            else:
-                 result = tools
-
-        elif method == "tools/call":
-            name = params.get("name")
-            args = params.get("arguments", {})
-            
-            # call_tool returns a CallToolResult usually
-            tool_result = await mcp_server.call_tool(name, args)
-            
-            if hasattr(tool_result, "model_dump"):
-                result = tool_result.model_dump()
-            else:
-                result = tool_result
-                
-        elif method == "prompts/list":
-            prompts = await mcp_server.list_prompts()
-            if hasattr(prompts, "model_dump"):
-                result = prompts.model_dump()
-            else:
-                result = prompts
-                
-        elif method == "prompts/get":
-            name = params.get("name")
-            args = params.get("arguments", {})
-            prompt_result = await mcp_server.get_prompt(name, args)
-            if hasattr(prompt_result, "model_dump"):
-                result = prompt_result.model_dump()
-            else:
-                result = prompt_result
-
-        else:
-            # Method not found
-            error = {"code": -32601, "message": f"Method not found: {method}"}
-
-        # Construct response
-        response = {
-            "jsonrpc": "2.0",
-            "id": msg_id
-        }
-        
-        if error:
-            response["error"] = error
-        else:
-            response["result"] = result
-            
-        return response
+        return resp
 
     except Exception as e:
         logger.error(f"Error processing message: {e}", exc_info=True)
         return {
-            "jsonrpc": "2.0", 
-            "id": body.get("id"), 
-            "error": {"code": -32603, "message": str(e)}
+            "jsonrpc": "2.0",
+            "id": body.get("id") if isinstance(body, dict) else None,
+            "error": {"code": -32603, "message": str(e)},
         }
 
 # For Cloud Run, use the FastAPI app directly

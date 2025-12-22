@@ -73,32 +73,27 @@ async def test_sse_endpoint(base_url: str) -> bool:
     print("Testing /sse endpoint...")
     async with httpx.AsyncClient() as client:
         try:
-            message = {
-                "jsonrpc": "2.0",
-                "id": 1,
-                "method": "initialize",
-                "params": {
-                    "protocolVersion": "2024-12-01",
-                    "capabilities": {},
-                    "clientInfo": {
-                        "name": "test-client",
-                        "version": "1.0"
-                    }
-                }
+            # Simulate Cloud Run / reverse proxy headers so the SSE endpoint
+            # advertises an https:// message endpoint.
+            headers = {
+                "X-Forwarded-Proto": "https",
+                "Host": "example.test",
             }
             async with client.stream(
-                "POST",
+                "GET",
                 f"{base_url}/sse",
-                json=message,
+                headers=headers,
                 timeout=10.0
             ) as response:
                 print(f"  Status: {response.status_code}")
                 print(f"  Content-Type: {response.headers.get('content-type')}")
                 async for line in response.aiter_lines():
+                    if line.startswith("event: endpoint"):
+                        continue
                     if line.startswith("data: "):
-                        data = json.loads(line[6:])
-                        print(f"  SSE Data: {data}")
-                        return True
+                        endpoint_url = line[6:].strip()
+                        print(f"  SSE Endpoint URL: {endpoint_url}")
+                        return endpoint_url.startswith("https://example.test/message")
             return False
         except Exception as e:
             print(f"  Error: {e}")
