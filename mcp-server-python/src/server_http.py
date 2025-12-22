@@ -1,6 +1,7 @@
 """HTTP server module for Cloud Run deployment using SSE transport."""
 
 import asyncio
+from dataclasses import asdict, is_dataclass
 import json
 import logging
 import os
@@ -10,6 +11,7 @@ from contextlib import asynccontextmanager
 from typing import AsyncGenerator, Dict, Any, Optional
 
 from fastapi import FastAPI, Request, Response, HTTPException
+from fastapi.encoders import jsonable_encoder
 from fastapi.responses import StreamingResponse
 from fastapi.middleware.cors import CORSMiddleware
 from mcp.types import JSONRPCMessage, JSONRPCRequest, JSONRPCResponse
@@ -32,6 +34,49 @@ mcp_server = create_server()
 
 # Active SSE sessions: session_id -> outbound JSON-RPC message queue
 _sse_sessions: Dict[str, "asyncio.Queue[Dict[str, Any]]"] = {}
+
+
+def _to_jsonable(obj: Any) -> Any:
+    """
+    Convert arbitrary objects into JSON-serializable structures.
+
+    This is critical for SSE `event: message` payloads: some FastMCP versions
+    can yield Tool/Prompt objects that must be converted via `model_dump()`.
+    """
+    # FastAPI's encoder already handles many common types (Pydantic, dataclasses, etc.)
+    try:
+        return jsonable_encoder(obj)
+    except Exception:
+        pass
+
+    # Fallback: handle a few shapes explicitly.
+    if obj is None or isinstance(obj, (str, int, float, bool)):
+        return obj
+    if isinstance(obj, dict):
+        return {k: _to_jsonable(v) for k, v in obj.items()}
+    if isinstance(obj, (list, tuple, set)):
+        return [_to_jsonable(v) for v in obj]
+    if hasattr(obj, "model_dump"):
+        try:
+            return _to_jsonable(obj.model_dump())
+        except Exception:
+            pass
+    if hasattr(obj, "dict"):
+        try:
+            return _to_jsonable(obj.dict())
+        except Exception:
+            pass
+    if is_dataclass(obj):
+        try:
+            return _to_jsonable(asdict(obj))
+        except Exception:
+            pass
+    if hasattr(obj, "__dict__"):
+        try:
+            return _to_jsonable(vars(obj))
+        except Exception:
+            pass
+    return str(obj)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -199,7 +244,12 @@ async def handle_sse_connection(
             while True:
                 try:
                     msg = await asyncio.wait_for(queue.get(), timeout=15)
-                    payload = json.dumps(msg, separators=(",", ":"), ensure_ascii=False)
+                    # Ensure any Tool/Prompt/Pydantic objects are JSON-serializable.
+                    payload = json.dumps(
+                        _to_jsonable(msg),
+                        separators=(",", ":"),
+                        ensure_ascii=False,
+                    )
                     yield f"event: message\ndata: {payload}\n\n"
                 except asyncio.TimeoutError:
                     yield ": keepalive\n\n"
