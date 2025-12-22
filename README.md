@@ -281,3 +281,5 @@ This project is for experimental and learning purposes.
 - **BETA Features**: 18 features — Production readiness, advanced security, and performance optimization
 
 **Overall Assessment**: Core functionality is ~95% complete and ready for testing. Security, monitoring, and testing infrastructure are documented but not fully implemented, which is acceptable for a testing environment but needs attention before production.
+
+**2025-12-22 14:49:17 UTC** — Critical issue: ChatGPT web “New App” MCP connector creation remains unreliable, intermittently timing out during the initial SSE/JSON-RPC handshake against the Cloud Run deployment; investigation is focused on OpenAI connector-client handshake expectations and any Cloud Run edge/concurrency factors affecting long-lived SSE sessions.
