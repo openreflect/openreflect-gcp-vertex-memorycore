@@ -58,30 +58,39 @@ def format_ttl_expiration(ttl_seconds: int) -> str:
 
 def _format_mcp_text_content(payload: Dict[str, Any]) -> Dict[str, Any]:
     """
-    Wrap response data in MCP-compatible content envelope.
+    NOTE: FastMCP wraps tool return values into the MCP `content` envelope.
+
+    We keep this helper for potential direct-use cases, but MCP tool functions in
+    this codebase should generally return *plain* JSON-serializable dictionaries
+    (e.g., {"status": "success", ...}) and let FastMCP produce the final MCP
+    `content` response.
     """
     return {"content": [{"type": "text", "text": json.dumps(payload)}]}
 
 
 def format_error_response(error: str, details: Dict[str, Any] = None) -> Dict[str, Any]:
     """
-    Format error response in MCP-compatible structure.
+    Format an error response for tool return values.
+
+    FastMCP will wrap this dict into an MCP `content` envelope.
     """
     response = {"status": "error", "error": error}
     if details:
         response["details"] = details
-    return _format_mcp_text_content(response)
+    return response
 
 
 def format_success_response(
     data: Dict[str, Any] = None, message: str = None
 ) -> Dict[str, Any]:
     """
-    Format success response in MCP-compatible structure.
+    Format a success response for tool return values.
+
+    FastMCP will wrap this dict into an MCP `content` envelope.
     """
     response = {"status": "success"}
     if message:
         response["message"] = message
     if data:
         response.update(data)
-    return _format_mcp_text_content(response)
+    return response
