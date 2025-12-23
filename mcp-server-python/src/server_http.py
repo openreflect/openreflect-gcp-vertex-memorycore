@@ -168,6 +168,28 @@ async def sse_get_endpoint(request: Request):
         return resp
     return await handle_sse_connection(request)
 
+@fastapi_app.head("/sse")
+@fastapi_app.head("/sse/")
+async def sse_head_endpoint(request: Request):
+    """
+    HEAD variant for MCP SSE endpoint.
+
+    Some clients perform a HEAD "reachability" probe before opening the SSE stream.
+    Starlette/FastAPI do not always auto-generate HEAD for streaming routes, so we
+    provide it explicitly to avoid 405s.
+    """
+    if (resp := _authorize(request)) is not None:
+        return resp
+    return Response(
+        status_code=200,
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no",
+        },
+    )
+
 @fastapi_app.post("/sse")
 @fastapi_app.post("/sse/")
 async def sse_post_endpoint(request: Request):
