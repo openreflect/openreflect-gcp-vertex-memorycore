@@ -1128,14 +1128,51 @@ See [TOOLS_GUIDE.md](./TOOLS_GUIDE.md) for complete migration guide for each too
 **Key additions at the top of the file**:
 
 ```python
-# Add to imports at top of tools.py
+# Add to imports at top of tools.py (after existing imports)
+
 from .auth import (
-    require_auth, 
+    require_auth,
     AuthenticationRequired,
     get_current_session,
+    get_current_session_id,  # Used by auth tools
     derive_user_id_from_passphrase,
 )
 from .sessions import bind_session_to_user, unbind_session, get_session
+```
+
+**Complete imports section for reference** (showing existing + new):
+
+```python
+"""MCP Tools"""
+
+import logging
+import os  # NEW: for SERVICE_URL env var
+from typing import Any, Dict, List, Optional
+
+import vertexai
+from mcp.server.fastmcp import FastMCP
+
+from .app_state import app
+from .formatters import (
+    format_conversation_events,
+    format_error_response,
+    format_memory,
+    format_success_response,
+    format_ttl_expiration,
+)
+from .validators import validate_conversation, validate_memory_fact, validate_scope
+
+# NEW: Authentication imports
+from .auth import (
+    require_auth,
+    AuthenticationRequired,
+    get_current_session,
+    get_current_session_id,
+    derive_user_id_from_passphrase,
+)
+from .sessions import bind_session_to_user, unbind_session, get_session
+
+logger = logging.getLogger(__name__)
 ```
 
 **Add new authentication tools** inside `register_tools()`:
