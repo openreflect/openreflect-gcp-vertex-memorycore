@@ -1563,6 +1563,26 @@ gcloud run services update openreflect-mcp \
 - [ ] Set `OAUTH_REDIRECT_URI` (must match Cloud Console)
 - [ ] Set `SERVICE_URL`
 
+### Cloud Run Instance Configuration
+
+> ⚠️ **CRITICAL MVP CONSTRAINT**: Sessions are stored in-memory. With multiple instances, users may lose authentication when requests hit different instances.
+
+- [ ] **Set `max-instances=1`** (Required until Redis persistence is implemented)
+
+```bash
+# Apply instance limit to prevent session loss across instances
+gcloud run services update openreflect-mcp \
+  --region us-central1 \
+  --max-instances 1
+```
+
+**Why This Matters**:
+- User authenticates → session stored in Instance A memory
+- Next request hits Instance B → Instance B has no session → user appears unauthenticated
+- Until Redis/Firestore session persistence is added, single instance is required
+
+**Future Enhancement**: Replace in-memory `sessions` dict with Redis for horizontal scaling.
+
 ### Verification
 
 - [ ] Deploy to Cloud Run

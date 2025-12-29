@@ -210,6 +210,40 @@ await initialize_memory_bank(
 - This tool is mainly for initial setup or dynamic reconfiguration
 - In production, engine should be pre-configured via env var
 
+**Security Hardening (Required for Production)**:
+
+> ⚠️ **CRITICAL**: In a multi-user shared deployment, this tool must be hardened to prevent users from reconfiguring the global engine and affecting all other users.
+
+Add this code at the **beginning** of the `initialize_memory_bank` function in `src/tools.py`:
+
+```python
+@mcp.tool()
+async def initialize_memory_bank(
+    project_id: str,
+    location: str = "us-central1",
+    memory_topics: List[str] = None,
+    agent_engine_name: str = None,
+) -> Dict[str, Any]:
+    # SECURITY HARDENING: Prevent runtime reconfiguration in production
+    # If already initialized, return current config (read-only mode)
+    if app.is_ready():
+        return format_success_response({
+            "status": "already_initialized",
+            "message": "Memory Bank is already configured. No changes made.",
+            "agent_engine_name": app.agent_engine.api_resource.name,
+            "project_id": app.config.project_id,
+            "location": app.config.location,
+            "note": "To change configuration, update AGENT_ENGINE_NAME environment variable and redeploy."
+        })
+    
+    # ... rest of existing initialization logic (only runs if NOT initialized) ...
+```
+
+**Why This Matters**:
+- Without this check, any user could call `initialize_memory_bank` and redirect all users' memory operations to a different engine
+- This would either cause data loss (memories go to wrong engine) or security breach (attacker's engine receives all data)
+- The hardening makes the tool "informational" in production while still allowing initial setup
+
 ---
 
 ### generate_memories
