@@ -7,19 +7,24 @@ import logging
 import os
 import sys
 import uuid
+import base64
 from contextlib import asynccontextmanager
-from typing import AsyncGenerator, Dict, Any, Optional
+from contextvars import ContextVar
+from typing import AsyncGenerator, Dict, Any, Optional, List
+from datetime import datetime
 
+import httpx
 from fastapi import FastAPI, Request, Response, HTTPException
 from fastapi.encoders import jsonable_encoder
-from fastapi.responses import StreamingResponse
+from fastapi.responses import StreamingResponse, RedirectResponse, HTMLResponse
 from fastapi.middleware.cors import CORSMiddleware
 from mcp.types import JSONRPCMessage, JSONRPCRequest, JSONRPCResponse
 import mcp.types as types
 
 # Import the server creation factory directly
 from .server import create_server
-from .app_state import app as app_state
+from .app_state import app as app_state, SessionState, current_session_id
+from .auth import derive_user_id_from_google
 
 # Configure logging
 logging.basicConfig(
@@ -143,17 +148,143 @@ def _authorize(request: Request) -> Optional[Response]:
 async def health_check():
     """Health check endpoint for Cloud Run."""
     status = "healthy" if app_state.is_ready() else "initializing"
-    message = (
-        "Ready"
-        if app_state.is_ready()
-        else "Use initialize_memory_bank to complete setup or set AGENT_ENGINE_NAME"
-    )
+    
+    # Get current session info if available
+    session_id = current_session_id.get()
+    session_info = {}
+    if session_id and session_id in app_state.sessions:
+        s = app_state.sessions[session_id]
+        session_info = {
+            "session_id": s.session_id,
+            "authenticated": s.is_authenticated,
+            "user_id": s.user_id,
+        }
+
     return {
         "status": status,
         "initialized": app_state.is_ready(),
         "has_agent_engine": app_state.agent_engine is not None,
-        "message": message,
+        "session": session_info,
+        "message": "Ready" if app_state.is_ready() else "Use initialize_memory_bank to complete setup",
     }
+
+# ========================================================================
+# OAuth Endpoints (AUTH_DESIGN.md)
+# ========================================================================
+
+def encode_state(session_id: str) -> str:
+    """Encode session_id for OAuth state parameter."""
+    return base64.urlsafe_b64encode(
+        json.dumps({"session_id": session_id}).encode()
+    ).decode()
+
+def decode_state(state: str) -> str:
+    """Decode session_id from OAuth state parameter."""
+    data = json.loads(base64.urlsafe_b64decode(state))
+    return data["session_id"]
+
+@fastapi_app.get("/oauth/authorize")
+async def oauth_authorize(session_id: str):
+    """Initiate Google OAuth flow."""
+    config = app_state.config
+    if not config.google_client_id or not config.google_client_secret:
+        raise HTTPException(status_code=501, detail="OAuth not configured on server")
+    
+    state = encode_state(session_id)
+    redirect_uri = config.oauth_redirect_uri or "https://openreflect.run.app/oauth/callback"
+    
+    auth_url = (
+        "https://accounts.google.com/o/oauth2/v2/auth?"
+        f"client_id={config.google_client_id}&"
+        f"redirect_uri={redirect_uri}&"
+        "response_type=code&"
+        "scope=email%20profile%20openid&"
+        "access_type=offline&"
+        f"state={state}"
+    )
+    return RedirectResponse(auth_url)
+
+@fastapi_app.get("/oauth/callback")
+async def oauth_callback(code: str, state: str):
+    """Handle Google OAuth callback."""
+    config = app_state.config
+    try:
+        session_id = decode_state(state)
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid state parameter")
+    
+    redirect_uri = config.oauth_redirect_uri or "https://openreflect.run.app/oauth/callback"
+
+    # Exchange code for tokens
+    async with httpx.AsyncClient() as client:
+        token_resp = await client.post(
+            "https://oauth2.googleapis.com/token",
+            data={
+                "code": code,
+                "client_id": config.google_client_id,
+                "client_secret": config.google_client_secret,
+                "redirect_uri": redirect_uri,
+                "grant_type": "authorization_code"
+            }
+        )
+        if token_resp.status_code != 200:
+            logger.error(f"OAuth token exchange failed: {token_resp.text}")
+            raise HTTPException(status_code=500, detail="Failed to exchange OAuth code")
+        
+        tokens = token_resp.json()
+        
+        # Get user info
+        userinfo_resp = await client.get(
+            "https://www.googleapis.com/oauth2/v2/userinfo",
+            headers={"Authorization": f"Bearer {tokens['access_token']}"}
+        )
+        if userinfo_resp.status_code != 200:
+            raise HTTPException(status_code=500, detail="Failed to fetch user info from Google")
+        
+        user_info = userinfo_resp.json()
+
+    # Derive user_id and bind to session
+    google_sub = user_info["id"]
+    email = user_info.get("email")
+    user_id = derive_user_id_from_google(google_sub, config.identity_secret)
+    
+    session = app_state.get_or_create_session(session_id)
+    session.user_id = user_id
+    session.email = email
+    session.auth_method = "oauth"
+    session.authenticated_at = datetime.utcnow()
+    
+    logger.info(f"OAuth success for user {email} (session {session_id})")
+
+    # Return success page (as specified in AUTH_DESIGN.md)
+    return HTMLResponse(f"""
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>OpenReflect - Connected!</title>
+        <style>
+            body {{
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+                display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0;
+                background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); color: white;
+            }}
+            .container {{ text-align: center; padding: 2rem; }}
+            .checkmark {{ font-size: 4rem; margin-bottom: 1rem; color: #4CAF50; }}
+            h1 {{ margin-bottom: 0.5rem; }}
+            p {{ color: #a0a0a0; }}
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <div class="checkmark">✓</div>
+            <h1>Connected to OpenReflect!</h1>
+            <p>Signed in as {email or 'User'}</p>
+            <p>You can close this window and return to your AI assistant.</p>
+        </div>
+        <script>setTimeout(() => window.close(), 3000);</script>
+    </body>
+    </html>
+    """)
 
 @fastapi_app.get("/")
 async def root():
@@ -219,13 +350,7 @@ async def handle_sse_connection(
         return value.split(",")[0].strip()
 
     def _get_external_base_url(request: Request) -> str:
-        """
-        Construct an externally-reachable base URL (scheme://host) for Cloud Run.
-
-        Cloud Run terminates TLS at the edge; inside the container the request scheme
-        is often seen as http. ChatGPT expects the SSE 'endpoint' event to advertise
-        an https:// message URL, so we prefer proxy headers when present.
-        """
+        """Construct an externally-reachable base URL."""
         proto = _first_forwarded_value(request.headers.get("x-forwarded-proto"))
         host = (
             _first_forwarded_value(request.headers.get("x-forwarded-host"))
@@ -233,40 +358,37 @@ async def handle_sse_connection(
         )
         if proto and host:
             return f"{proto}://{host}".rstrip("/")
-        # Fallback to Starlette's computed base_url
         return str(request.base_url).rstrip("/")
     
+    # Simple unique session ID
+    session_id = str(uuid.uuid4())
+    current_session_id.set(session_id)
+    app_state.get_or_create_session(session_id)
+
     async def event_stream(
         initial_request: Optional[Dict[str, Any]] = None,
     ) -> AsyncGenerator[str, None]:
+        # Ensure context variable is set in the generator task
+        current_session_id.set(session_id)
+        
         try:
-            # Simple unique session ID
-            session_id = str(uuid.uuid4())
             logger.info(f"New SSE session: {session_id}")
 
             queue: asyncio.Queue[Dict[str, Any]] = asyncio.Queue()
             _sse_sessions[session_id] = queue
 
-            # Construct the absolute URL for the /message endpoint
-            # We use the request's base URL + /message
-            # We also append session_id for tracking
             base_url = _get_external_base_url(request)
             message_endpoint = f"{base_url}/message?session_id={session_id}"
             
-            # The MCP spec says the first event is the endpoint URL
             yield f"event: endpoint\ndata: {message_endpoint}\n\n"
 
-            # If the client POSTed an initial JSON-RPC message to /sse (OpenAI does),
-            # process it and send the response as an SSE message event.
             if initial_request:
                 if (initial_resp := await _handle_jsonrpc(initial_request)) is not None:
                     await queue.put(initial_resp)
 
-            # Stream queued JSON-RPC responses over SSE, with keepalives.
             while True:
                 try:
                     msg = await asyncio.wait_for(queue.get(), timeout=15)
-                    # Ensure any Tool/Prompt/Pydantic objects are JSON-serializable.
                     payload = json.dumps(
                         _to_jsonable(msg),
                         separators=(",", ":"),
@@ -279,8 +401,9 @@ async def handle_sse_connection(
         except asyncio.CancelledError:
             logger.info(f"SSE session disconnected: {session_id}")
         finally:
-            if "session_id" in locals():
-                _sse_sessions.pop(session_id, None)
+            _sse_sessions.pop(session_id, None)
+            # Sessions are kept in app_state.sessions for identity persistence 
+            # while the process lives, but SSE cleanup is handled here.
 
     return StreamingResponse(
         event_stream(initial_request),
@@ -432,6 +555,10 @@ async def message_endpoint(request: Request, session_id: str = None):
     """
     if (resp := _authorize(request)) is not None:
         return resp
+
+    # Set the current session ID for this request context
+    if session_id:
+        current_session_id.set(session_id)
 
     try:
         body = await request.json()

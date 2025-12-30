@@ -1,12 +1,14 @@
 """MCP Tools"""
 
 import logging
+from datetime import datetime
 from typing import Any, Dict, List, Optional
 
 import vertexai
 from mcp.server.fastmcp import FastMCP
 
-from .app_state import app
+from .app_state import app, current_session_id, SessionState
+from .auth import derive_user_id_from_passphrase
 from .formatters import (
     format_conversation_events,
     format_error_response,
@@ -21,6 +23,122 @@ logger = logging.getLogger(__name__)
 
 def register_tools(mcp: FastMCP):
     """Register all MCP tools with the server."""
+
+    def _get_session() -> SessionState:
+        """Helper to get current session state."""
+        session_id = current_session_id.get()
+        return app.get_or_create_session(session_id)
+
+    def _get_user_id(passphrase: str = None) -> tuple[str, str]:
+        """
+        Get user_id from passphrase (stateless) or session (stateful).
+        Returns (user_id, error_message). If error_message is set, user_id is None.
+        """
+        if passphrase:
+            # Stateless auth: derive user_id from passphrase
+            if len(passphrase.strip()) < 4:
+                return None, "Passphrase must be at least 4 characters."
+            user_id = derive_user_id_from_passphrase(passphrase, app.config.identity_secret)
+            return user_id, None
+        else:
+            # Stateful auth: check session
+            session = _get_session()
+            if session.is_authenticated:
+                return session.user_id, None
+            return None, "Please provide a passphrase or connect your account first."
+
+    # ========================================================================
+    # Authentication Tools (AUTH_DESIGN.md)
+    # ========================================================================
+
+    @mcp.tool()
+    async def connect_account(request: Optional[Dict] = None) -> Dict[str, Any]:
+        """
+        Connect your Google account to access your memories across AI assistants.
+        
+        This returns an OAuth link. Once you sign in, your memories will be
+        accessible from ChatGPT, Claude, and any other client using OpenReflect.
+        """
+        session = _get_session()
+        if session.is_authenticated:
+            return format_success_response(
+                {
+                    "status": "already_connected",
+                    "email": session.email,
+                    "auth_method": session.auth_method,
+                },
+                message="Your account is already connected!"
+            )
+
+        # In a real Cloud Run deployment, we'd use the actual service URL.
+        # For MVP, we'll try to guess it or use a placeholder if not set in config.
+        # The client should ideally know the base URL.
+        auth_url = f"/oauth/authorize?session_id={session.session_id}"
+        
+        return format_success_response(
+            {
+                "status": "auth_required",
+                "auth_url": auth_url,
+            },
+            message="Please visit the auth_url to sign in with Google."
+        )
+
+    @mcp.tool()
+    async def connect_with_passphrase(passphrase: str) -> Dict[str, Any]:
+        """
+        Connect using a passphrase instead of Google sign-in.
+        
+        Use the same passphrase across all AI assistants to access the same memories.
+        
+        Args:
+            passphrase: A memorable phrase (at least 4 characters)
+        """
+        if not passphrase or len(passphrase.strip()) < 4:
+            return format_error_response("Passphrase must be at least 4 characters.")
+
+        session = _get_session()
+        user_id = derive_user_id_from_passphrase(passphrase, app.config.identity_secret)
+        
+        session.user_id = user_id
+        session.auth_method = "passphrase"
+        session.authenticated_at = datetime.utcnow()
+        
+        return format_success_response(
+            {
+                "status": "connected",
+                "user_id": user_id,
+            },
+            message="Connected to your memory bank via passphrase!"
+        )
+
+    @mcp.tool()
+    async def check_connection() -> Dict[str, Any]:
+        """Check your current connection status and user info."""
+        session = _get_session()
+        if not session.is_authenticated:
+            return format_success_response(
+                {"status": "not_connected"},
+                message="You are not connected. Use connect_account or connect_with_passphrase."
+            )
+        
+        return format_success_response({
+            "status": "connected",
+            "user_id": session.user_id,
+            "email": session.email,
+            "auth_method": session.auth_method,
+            "connected_since": str(session.authenticated_at)
+        })
+
+    @mcp.tool()
+    async def disconnect() -> Dict[str, Any]:
+        """Disconnect from your memory bank for this session."""
+        session = _get_session()
+        session.user_id = None
+        session.email = None
+        session.auth_method = None
+        session.authenticated_at = None
+        
+        return format_success_response(message="Disconnected successfully.")
 
     # ========================================================================
     # Configuration Tools
@@ -58,6 +176,18 @@ def register_tools(mcp: FastMCP):
                 memory_topics=["USER_PREFERENCES", "USER_PERSONAL_INFO"]
             )
         """
+        # SECURITY HARDENING: Prevent runtime reconfiguration in production
+        # If already initialized, return current config (read-only mode)
+        if app.is_ready():
+            return format_success_response({
+                "status": "already_initialized",
+                "message": "Memory Bank is already configured. No changes made.",
+                "agent_engine_name": app.agent_engine.api_resource.name,
+                "project_id": app.config.project_id,
+                "location": app.config.location,
+                "note": "To change configuration, update AGENT_ENGINE_NAME env var and redeploy."
+            })
+
         try:
             logger.info(f"Initializing Memory Bank for project {project_id}")
 
@@ -122,7 +252,7 @@ def register_tools(mcp: FastMCP):
     @mcp.tool()
     async def generate_memories(
         conversation: List[Dict[str, str]],
-        scope: Dict[str, str],
+        passphrase: Optional[str] = None,
         wait_for_completion: bool = True,
     ) -> Dict[str, Any]:
         """
@@ -132,27 +262,22 @@ def register_tools(mcp: FastMCP):
 
         Args:
             conversation: List of messages with 'role' and 'content'
-            scope: Dictionary identifying the user (e.g., {"user_id": "123"})
+            passphrase: Your passphrase for authentication (use same across all AI assistants)
             wait_for_completion: Whether to wait for generation to complete
 
         Returns:
             Generated memories and operation status
-
-        Example:
-            conversation = [
-                {"role": "user", "content": "I'm Alice and I love Python"},
-                {"role": "assistant", "content": "Nice to meet you, Alice!"}
-            ]
-            await generate_memories(conversation, {"user_id": "alice123"})
         """
+        user_id, error = _get_user_id(passphrase)
+        if error:
+            return format_error_response(error)
+        
+        scope = {"user_id": user_id}
+
         if not app.is_ready():
             return format_error_response(
                 "Memory Bank not initialized. Call initialize_memory_bank first."
             )
-
-        # Validate inputs
-        if error := validate_scope(scope):
-            return format_error_response(error)
 
         if error := validate_conversation(conversation):
             return format_error_response(error)
@@ -212,38 +337,29 @@ def register_tools(mcp: FastMCP):
 
     @mcp.tool()
     async def retrieve_memories(
-        scope: Dict[str, str], search_query: Optional[str] = None, top_k: int = 5
+        passphrase: Optional[str] = None, search_query: Optional[str] = None, top_k: int = 5
     ) -> Dict[str, Any]:
         """
-        Retrieve memories for a user, with optional similarity search.
+        Retrieve memories for the connected user, with optional similarity search.
 
         Args:
-            scope: User identifier dictionary
+            passphrase: Your passphrase for authentication (use same across all AI assistants)
             search_query: Optional search query for similarity matching
             top_k: Number of results to return (default: 5)
 
         Returns:
             List of memories with optional similarity scores
-
-        Examples:
-            # Get all memories for a user
-            await retrieve_memories({"user_id": "alice123"})
-
-            # Search for specific memories
-            await retrieve_memories(
-                {"user_id": "alice123"},
-                search_query="programming preferences",
-                top_k=3
-            )
         """
+        user_id, error = _get_user_id(passphrase)
+        if error:
+            return format_error_response(error)
+        
+        scope = {"user_id": user_id}
+
         if not app.is_ready():
             return format_error_response(
                 "Memory Bank not initialized. Call initialize_memory_bank first."
             )
-
-        # Validate scope
-        if error := validate_scope(scope):
-            return format_error_response(error)
 
         try:
             # Retrieve memories
@@ -283,26 +399,34 @@ def register_tools(mcp: FastMCP):
 
     @mcp.tool()
     async def search_memories(
-        scope: Dict[str, str], search_query: str, top_k: int = 5
+        search_query: str, passphrase: Optional[str] = None, top_k: int = 5
     ) -> Dict[str, Any]:
         """
         Explicit search tool for memories (Deep Research compatibility).
 
         Args:
-            scope: User identifier
             search_query: Query string for similarity search
+            passphrase: Your passphrase for authentication (use same across all AI assistants)
             top_k: Max results
 
         Returns:
             Memories with similarity scores.
         """
-        return await retrieve_memories(scope=scope, search_query=search_query, top_k=top_k)
+        return await retrieve_memories(passphrase=passphrase, search_query=search_query, top_k=top_k)
 
     @mcp.tool()
-    async def fetch_memory(memory_name: str) -> Dict[str, Any]:
+    async def fetch_memory(memory_name: str, passphrase: Optional[str] = None) -> Dict[str, Any]:
         """
         Fetch a single memory by resource name.
+        
+        Args:
+            memory_name: Full resource name of the memory
+            passphrase: Your passphrase for authentication (use same across all AI assistants)
         """
+        user_id, error = _get_user_id(passphrase)
+        if error:
+            return format_error_response(error)
+
         if not app.is_ready():
             return format_error_response(
                 "Memory Bank not initialized. Call initialize_memory_bank first."
@@ -310,6 +434,12 @@ def register_tools(mcp: FastMCP):
 
         try:
             memory = app.client.agent_engines.get_memory(name=memory_name)
+            
+            # Security: Verify scope matches connected user
+            memory_scope = getattr(memory, "scope", {})
+            if isinstance(memory_scope, dict) and memory_scope.get("user_id") != user_id:
+                return format_error_response("Unauthorized: This memory does not belong to you.")
+
             return format_success_response({"memory": format_memory(memory)})
         except Exception as e:
             logger.error(f"Failed to fetch memory: {e}")
@@ -321,26 +451,25 @@ def register_tools(mcp: FastMCP):
 
     @mcp.tool()
     async def create_memory(
-        fact: str, scope: Dict[str, str], ttl_seconds: Optional[int] = None
+        fact: str, passphrase: Optional[str] = None, ttl_seconds: Optional[int] = None
     ) -> Dict[str, Any]:
         """
         Create a memory directly.
 
         Args:
             fact: The information to remember
-            scope: User identifier
+            passphrase: Your passphrase for authentication (use same across all AI assistants)
             ttl_seconds: Optional time-to-live in seconds
 
         Returns:
             Created memory details
-
-        Example:
-            await create_memory(
-                fact="Alice prefers dark mode in all applications",
-                scope={"user_id": "alice123"},
-                ttl_seconds=86400  # Expires in 24 hours
-            )
         """
+        user_id, error = _get_user_id(passphrase)
+        if error:
+            return format_error_response(error)
+        
+        scope = {"user_id": user_id}
+
         if not app.is_ready():
             return format_error_response(
                 "Memory Bank not initialized. Call initialize_memory_bank first."
@@ -348,9 +477,6 @@ def register_tools(mcp: FastMCP):
 
         # Validate inputs
         if error := validate_memory_fact(fact):
-            return format_error_response(error)
-
-        if error := validate_scope(scope):
             return format_error_response(error)
 
         try:
@@ -389,24 +515,35 @@ def register_tools(mcp: FastMCP):
             return format_error_response(str(e))
 
     @mcp.tool()
-    async def delete_memory(memory_name: str) -> Dict[str, Any]:
+    async def delete_memory(memory_name: str, passphrase: Optional[str] = None) -> Dict[str, Any]:
         """
         Delete a specific memory by name.
 
         Args:
             memory_name: Full memory resource name
+            passphrase: Your passphrase for authentication (use same across all AI assistants)
 
         Returns:
             Deletion confirmation
         """
+        user_id, error = _get_user_id(passphrase)
+        if error:
+            return format_error_response(error)
+
         if not app.is_ready():
             return format_error_response(
                 "Memory Bank not initialized. Call initialize_memory_bank first."
             )
 
         try:
+            # First fetch to verify ownership
+            memory = app.client.agent_engines.get_memory(name=memory_name)
+            memory_scope = getattr(memory, "scope", {})
+            if isinstance(memory_scope, dict) and memory_scope.get("user_id") != user_id:
+                return format_error_response("Unauthorized: You cannot delete a memory that does not belong to you.")
+
             app.client.agent_engines.delete_memory(name=memory_name)
-            logger.info(f"Deleted memory: {memory_name}")
+            logger.info(f"Deleted memory: {memory_name} for user {user_id}")
 
             return format_success_response({"deleted": memory_name})
         except Exception as e:
@@ -414,41 +551,17 @@ def register_tools(mcp: FastMCP):
             return format_error_response(str(e))
 
     @mcp.tool()
-    async def list_memories(page_size: int = 50) -> Dict[str, Any]:
+    async def list_memories(passphrase: Optional[str] = None, page_size: int = 50) -> Dict[str, Any]:
         """
-        List all memories in the Memory Bank.
+        List all memories for the connected user.
 
         Args:
-            page_size: Number of memories per page (default: 50)
+            passphrase: Your passphrase for authentication (use same across all AI assistants)
+            page_size: Number of memories to return (default: 50)
 
         Returns:
-            List of all memories
+            List of memories
         """
-        if not app.is_ready():
-            return format_error_response(
-                "Memory Bank not initialized. Call initialize_memory_bank first."
-            )
-
-        try:
-            pager = app.client.agent_engines.list_memories(
-                name=app.agent_engine.api_resource.name,
-                config={"page_size": page_size} if page_size else None,
-            )
-
-            # Convert iterator to list and format
-            memories = []
-            for memory in pager:
-                logger.debug(f"Processing memory: {memory}")
-                formatted = format_memory(memory)
-                logger.debug(f"Formatted memory: {formatted}")
-                memories.append(formatted)
-
-            logger.info(f"Listed {len(memories)} memories")
-
-            return format_success_response(
-                {"count": len(memories), "memories": memories}
-            )
-
-        except Exception as e:
-            logger.error(f"Failed to list memories: {e}")
-            return format_error_response(str(e))
+        # For Tier 1 isolation, we use retrieve_memories with scope instead of 
+        # the global list_memories call to ensure the user only sees their own data.
+        return await retrieve_memories(passphrase=passphrase, top_k=page_size)

@@ -29,6 +29,19 @@ class Config(BaseModel):
         default=None,
         description="Optional bearer token for HTTPS/SSE connector authentication",
     )
+    identity_secret: str = Field(
+        default="change-me-in-production",
+        description="Secret for deterministic user_id derivation",
+    )
+    google_client_id: Optional[str] = Field(
+        default=None, description="Google OAuth Client ID"
+    )
+    google_client_secret: Optional[str] = Field(
+        default=None, description="Google OAuth Client Secret"
+    )
+    oauth_redirect_uri: Optional[str] = Field(
+        default=None, description="OAuth redirect URI"
+    )
 
     @classmethod
     def from_env(cls) -> "Config":
@@ -39,6 +52,10 @@ class Config(BaseModel):
             agent_engine_name=os.getenv("AGENT_ENGINE_NAME"),
             api_key=os.getenv("GOOGLE_API_KEY"),
             connector_bearer_token=os.getenv("CONNECTOR_BEARER_TOKEN"),
+            identity_secret=os.getenv("IDENTITY_SECRET", "change-me-in-production"),
+            google_client_id=os.getenv("GOOGLE_CLIENT_ID"),
+            google_client_secret=os.getenv("GOOGLE_CLIENT_SECRET"),
+            oauth_redirect_uri=os.getenv("OAUTH_REDIRECT_URI"),
         )
 
     def is_valid(self) -> bool:
