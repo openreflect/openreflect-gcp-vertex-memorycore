@@ -20,22 +20,22 @@ def derive_user_id_from_google(google_sub: str, secret: str) -> str:
     return f"usr_{hash_bytes[:8].hex()}"
 
 
-def derive_user_id_from_passphrase(passphrase: str, secret: str) -> str:
+def derive_user_id_from_key(key: str, secret: str) -> str:
     """
-    Derive a deterministic user_id from a passphrase.
+    Derive a deterministic user_id from a key (passphrase).
     
     Args:
-        passphrase: User-provided passphrase (case-insensitive).
+        key: User-provided key/passphrase (case-insensitive).
         secret: Server-side secret (IDENTITY_SECRET).
         
     Returns:
         Deterministic user_id: "usr_" + 16 hex chars.
     """
     # Normalize: lowercase, strip whitespace
-    normalized = passphrase.lower().strip()
+    normalized = key.lower().strip()
     
     # Hash with secret to prevent rainbow table attacks
-    # Using 'passphrase:' prefix as recommended in ARCHITECTURE_STRATEGY.md to avoid collisions
+    # Using 'passphrase:' prefix to maintain backwards compatibility with existing hashes
     hash_input = f"passphrase:{normalized}:{secret}"
     hash_bytes = hashlib.sha256(hash_input.encode()).digest()
     

@@ -8,7 +8,7 @@ import vertexai
 from mcp.server.fastmcp import FastMCP
 
 from .app_state import app, current_session_id, SessionState
-from .auth import derive_user_id_from_passphrase
+from .auth import derive_user_id_from_key
 from .formatters import (
     format_conversation_events,
     format_error_response,
@@ -29,23 +29,23 @@ def register_tools(mcp: FastMCP):
         session_id = current_session_id.get()
         return app.get_or_create_session(session_id)
 
-    def _get_user_id(passphrase: str = None) -> tuple[str, str]:
+    def _get_user_id(key: str = None) -> tuple[str, str]:
         """
-        Get user_id from passphrase (stateless) or session (stateful).
+        Get user_id from key (stateless) or session (stateful).
         Returns (user_id, error_message). If error_message is set, user_id is None.
         """
-        if passphrase:
-            # Stateless auth: derive user_id from passphrase
-            if len(passphrase.strip()) < 4:
+        if key:
+            # Stateless auth: derive user_id from key
+            if len(key.strip()) < 4:
                 return None, "Passphrase must be at least 4 characters."
-            user_id = derive_user_id_from_passphrase(passphrase, app.config.identity_secret)
+            user_id = derive_user_id_from_key(key, app.config.identity_secret)
             return user_id, None
         else:
             # Stateful auth: check session
             session = _get_session()
             if session.is_authenticated:
                 return session.user_id, None
-            return None, "Please provide a passphrase or connect your account first."
+            return None, "Please provide a key or connect your account first."
 
     # ========================================================================
     # Authentication Tools (AUTH_DESIGN.md)
@@ -84,23 +84,23 @@ def register_tools(mcp: FastMCP):
         )
 
     @mcp.tool()
-    async def connect_with_passphrase(passphrase: str) -> Dict[str, Any]:
+    async def connect_with_key(key: str) -> Dict[str, Any]:
         """
-        Connect using a passphrase instead of Google sign-in.
+        Connect using a key instead of Google sign-in.
         
-        Use the same passphrase across all AI assistants to access the same memories.
+        Use the same key across all AI assistants to access the same memories.
         
         Args:
-            passphrase: A memorable phrase (at least 4 characters)
+            key: A memorable phrase (at least 4 characters)
         """
-        if not passphrase or len(passphrase.strip()) < 4:
-            return format_error_response("Passphrase must be at least 4 characters.")
+        if not key or len(key.strip()) < 4:
+            return format_error_response("Key must be at least 4 characters.")
 
         session = _get_session()
-        user_id = derive_user_id_from_passphrase(passphrase, app.config.identity_secret)
+        user_id = derive_user_id_from_key(key, app.config.identity_secret)
         
         session.user_id = user_id
-        session.auth_method = "passphrase"
+        session.auth_method = "key"
         session.authenticated_at = datetime.utcnow()
         
         return format_success_response(
@@ -108,7 +108,7 @@ def register_tools(mcp: FastMCP):
                 "status": "connected",
                 "user_id": user_id,
             },
-            message="Connected to your memory bank via passphrase!"
+            message="Connected to your memory bank via key!"
         )
 
     @mcp.tool()
@@ -118,7 +118,7 @@ def register_tools(mcp: FastMCP):
         if not session.is_authenticated:
             return format_success_response(
                 {"status": "not_connected"},
-                message="You are not connected. Use connect_account or connect_with_passphrase."
+                message="You are not connected. Use connect_account or connect_with_key."
             )
         
         return format_success_response({
@@ -252,7 +252,7 @@ def register_tools(mcp: FastMCP):
     @mcp.tool()
     async def generate_memories(
         conversation: List[Dict[str, str]],
-        passphrase: Optional[str] = None,
+        key: Optional[str] = None,
         wait_for_completion: bool = True,
     ) -> Dict[str, Any]:
         """
@@ -262,13 +262,13 @@ def register_tools(mcp: FastMCP):
 
         Args:
             conversation: List of messages with 'role' and 'content'
-            passphrase: Your passphrase for authentication (use same across all AI assistants)
+            key: Your key for authentication (use same across all AI assistants)
             wait_for_completion: Whether to wait for generation to complete
 
         Returns:
             Generated memories and operation status
         """
-        user_id, error = _get_user_id(passphrase)
+        user_id, error = _get_user_id(key)
         if error:
             return format_error_response(error)
         
@@ -337,20 +337,20 @@ def register_tools(mcp: FastMCP):
 
     @mcp.tool()
     async def retrieve_memories(
-        passphrase: Optional[str] = None, search_query: Optional[str] = None, top_k: int = 5
+        key: Optional[str] = None, search_query: Optional[str] = None, top_k: int = 5
     ) -> Dict[str, Any]:
         """
         Retrieve memories for the connected user, with optional similarity search.
 
         Args:
-            passphrase: Your passphrase for authentication (use same across all AI assistants)
+            key: Your key for authentication (use same across all AI assistants)
             search_query: Optional search query for similarity matching
             top_k: Number of results to return (default: 5)
 
         Returns:
             List of memories with optional similarity scores
         """
-        user_id, error = _get_user_id(passphrase)
+        user_id, error = _get_user_id(key)
         if error:
             return format_error_response(error)
         
@@ -399,31 +399,31 @@ def register_tools(mcp: FastMCP):
 
     @mcp.tool()
     async def search_memories(
-        search_query: str, passphrase: Optional[str] = None, top_k: int = 5
+        search_query: str, key: Optional[str] = None, top_k: int = 5
     ) -> Dict[str, Any]:
         """
         Explicit search tool for memories (Deep Research compatibility).
 
         Args:
             search_query: Query string for similarity search
-            passphrase: Your passphrase for authentication (use same across all AI assistants)
+            key: Your key for authentication (use same across all AI assistants)
             top_k: Max results
 
         Returns:
             Memories with similarity scores.
         """
-        return await retrieve_memories(passphrase=passphrase, search_query=search_query, top_k=top_k)
+        return await retrieve_memories(key=key, search_query=search_query, top_k=top_k)
 
     @mcp.tool()
-    async def fetch_memory(memory_name: str, passphrase: Optional[str] = None) -> Dict[str, Any]:
+    async def fetch_memory(memory_name: str, key: Optional[str] = None) -> Dict[str, Any]:
         """
         Fetch a single memory by resource name.
         
         Args:
             memory_name: Full resource name of the memory
-            passphrase: Your passphrase for authentication (use same across all AI assistants)
+            key: Your key for authentication (use same across all AI assistants)
         """
-        user_id, error = _get_user_id(passphrase)
+        user_id, error = _get_user_id(key)
         if error:
             return format_error_response(error)
 
@@ -451,20 +451,20 @@ def register_tools(mcp: FastMCP):
 
     @mcp.tool()
     async def create_memory(
-        fact: str, passphrase: Optional[str] = None, ttl_seconds: Optional[int] = None
+        fact: str, key: Optional[str] = None, ttl_seconds: Optional[int] = None
     ) -> Dict[str, Any]:
         """
         Create a memory directly.
 
         Args:
             fact: The information to remember
-            passphrase: Your passphrase for authentication (use same across all AI assistants)
+            key: Your key for authentication (use same across all AI assistants)
             ttl_seconds: Optional time-to-live in seconds
 
         Returns:
             Created memory details
         """
-        user_id, error = _get_user_id(passphrase)
+        user_id, error = _get_user_id(key)
         if error:
             return format_error_response(error)
         
@@ -515,18 +515,18 @@ def register_tools(mcp: FastMCP):
             return format_error_response(str(e))
 
     @mcp.tool()
-    async def delete_memory(memory_name: str, passphrase: Optional[str] = None) -> Dict[str, Any]:
+    async def delete_memory(memory_name: str, key: Optional[str] = None) -> Dict[str, Any]:
         """
         Delete a specific memory by name.
 
         Args:
             memory_name: Full memory resource name
-            passphrase: Your passphrase for authentication (use same across all AI assistants)
+            key: Your key for authentication (use same across all AI assistants)
 
         Returns:
             Deletion confirmation
         """
-        user_id, error = _get_user_id(passphrase)
+        user_id, error = _get_user_id(key)
         if error:
             return format_error_response(error)
 
@@ -551,12 +551,12 @@ def register_tools(mcp: FastMCP):
             return format_error_response(str(e))
 
     @mcp.tool()
-    async def list_memories(passphrase: Optional[str] = None, page_size: int = 50) -> Dict[str, Any]:
+    async def list_memories(key: Optional[str] = None, page_size: int = 50) -> Dict[str, Any]:
         """
         List all memories for the connected user.
 
         Args:
-            passphrase: Your passphrase for authentication (use same across all AI assistants)
+            key: Your key for authentication (use same across all AI assistants)
             page_size: Number of memories to return (default: 50)
 
         Returns:
@@ -564,4 +564,4 @@ def register_tools(mcp: FastMCP):
         """
         # For Tier 1 isolation, we use retrieve_memories with scope instead of 
         # the global list_memories call to ensure the user only sees their own data.
-        return await retrieve_memories(passphrase=passphrase, top_k=page_size)
+        return await retrieve_memories(key=key, top_k=page_size)
