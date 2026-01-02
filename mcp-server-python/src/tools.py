@@ -7,7 +7,13 @@ from typing import Any, Dict, List, Optional
 import vertexai
 from mcp.server.fastmcp import FastMCP
 
-from .app_state import app, current_session_id, SessionState
+from .app_state import (
+    app,
+    current_session_id,
+    current_user_id,
+    current_user_email,
+    SessionState,
+)
 from .auth import derive_user_id_from_key
 from .formatters import (
     format_conversation_events,
@@ -24,6 +30,42 @@ logger = logging.getLogger(__name__)
 def register_tools(mcp: FastMCP):
     """Register all MCP tools with the server."""
 
+    def _ensure_memory_bank_ready() -> Optional[str]:
+        """
+        Lazy initialization for Vertex AI client + Agent Engine.
+
+        This avoids slow network calls during cold start (important for ChatGPT OAuth
+        connector configuration), while still allowing memory tools to work once invoked.
+
+        Returns:
+            None if ready, otherwise an error string for the caller to return.
+        """
+        if app.is_ready():
+            return None
+
+        # Must have at least basic config (project id) to auto-initialize.
+        if not app.config or not app.config.is_valid():
+            return "Memory Bank not configured. Set GOOGLE_CLOUD_PROJECT/GOOGLE_CLOUD_LOCATION and redeploy, or call initialize_memory_bank."
+
+        try:
+            if app.client is None:
+                app.client = vertexai.Client(
+                    project=app.config.project_id,
+                    location=app.config.location,
+                )
+
+            if app.agent_engine is None and app.config.agent_engine_name:
+                app.agent_engine = app.client.agent_engines.get(name=app.config.agent_engine_name)
+
+            if app.agent_engine is None:
+                return "Memory Bank not initialized. Call initialize_memory_bank first."
+
+            app.initialized = True
+            return None
+        except Exception as e:
+            logger.error(f"Failed to initialize Vertex AI client/Agent Engine: {e}")
+            return f"Memory Bank initialization failed: {e}"
+
     def _get_session() -> SessionState:
         """Helper to get current session state."""
         session_id = current_session_id.get()
@@ -37,10 +79,15 @@ def register_tools(mcp: FastMCP):
         if key:
             # Stateless auth: derive user_id from key
             if len(key.strip()) < 4:
-                return None, "Passphrase must be at least 4 characters."
+                return None, "Key must be at least 4 characters."
             user_id = derive_user_id_from_key(key, app.config.identity_secret)
             return user_id, None
         else:
+            # OAuth bearer auth (transport-level): server_http sets current_user_id per request.
+            token_user_id = current_user_id.get()
+            if token_user_id:
+                return token_user_id, None
+
             # Stateful auth: check session
             session = _get_session()
             if session.is_authenticated:
@@ -54,33 +101,19 @@ def register_tools(mcp: FastMCP):
     @mcp.tool()
     async def connect_account(request: Optional[Dict] = None) -> Dict[str, Any]:
         """
-        Connect your Google account to access your memories across AI assistants.
-        
-        This returns an OAuth link. Once you sign in, your memories will be
-        accessible from ChatGPT, Claude, and any other client using OpenReflect.
-        """
-        session = _get_session()
-        if session.is_authenticated:
-            return format_success_response(
-                {
-                    "status": "already_connected",
-                    "email": session.email,
-                    "auth_method": session.auth_method,
-                },
-                message="Your account is already connected!"
-            )
+        Deprecated: OAuth is now handled at the connector (transport) level for ChatGPT.
 
-        # In a real Cloud Run deployment, we'd use the actual service URL.
-        # For MVP, we'll try to guess it or use a placeholder if not set in config.
-        # The client should ideally know the base URL.
-        auth_url = f"/oauth/authorize?session_id={session.session_id}"
-        
+        In ChatGPT: set your MCP connector Authentication to OAuth; ChatGPT will manage tokens
+        and send `Authorization: Bearer ...` automatically on each request.
+
+        For non-ChatGPT clients, prefer `connect_with_key` (or supply OAuth bearer tokens yourself).
+        """
         return format_success_response(
             {
-                "status": "auth_required",
-                "auth_url": auth_url,
+                "status": "deprecated",
+                "note": "Use connector-level OAuth (recommended) or connect_with_key.",
             },
-            message="Please visit the auth_url to sign in with Google."
+            message="OAuth is now connector-level for ChatGPT; this tool is deprecated."
         )
 
     @mcp.tool()
@@ -114,6 +147,18 @@ def register_tools(mcp: FastMCP):
     @mcp.tool()
     async def check_connection() -> Dict[str, Any]:
         """Check your current connection status and user info."""
+        # Transport-level OAuth (ChatGPT) path
+        token_user = current_user_id.get()
+        if token_user:
+            return format_success_response(
+                {
+                    "status": "connected",
+                    "user_id": token_user,
+                    "email": current_user_email.get(),
+                    "auth_method": "oauth_token",
+                }
+            )
+
         session = _get_session()
         if not session.is_authenticated:
             return format_success_response(
@@ -274,10 +319,8 @@ def register_tools(mcp: FastMCP):
         
         scope = {"user_id": user_id}
 
-        if not app.is_ready():
-            return format_error_response(
-                "Memory Bank not initialized. Call initialize_memory_bank first."
-            )
+        if err := _ensure_memory_bank_ready():
+            return format_error_response(err)
 
         if error := validate_conversation(conversation):
             return format_error_response(error)
@@ -356,10 +399,8 @@ def register_tools(mcp: FastMCP):
         
         scope = {"user_id": user_id}
 
-        if not app.is_ready():
-            return format_error_response(
-                "Memory Bank not initialized. Call initialize_memory_bank first."
-            )
+        if err := _ensure_memory_bank_ready():
+            return format_error_response(err)
 
         try:
             # Retrieve memories
@@ -427,10 +468,8 @@ def register_tools(mcp: FastMCP):
         if error:
             return format_error_response(error)
 
-        if not app.is_ready():
-            return format_error_response(
-                "Memory Bank not initialized. Call initialize_memory_bank first."
-            )
+        if err := _ensure_memory_bank_ready():
+            return format_error_response(err)
 
         try:
             memory = app.client.agent_engines.get_memory(name=memory_name)
@@ -470,10 +509,8 @@ def register_tools(mcp: FastMCP):
         
         scope = {"user_id": user_id}
 
-        if not app.is_ready():
-            return format_error_response(
-                "Memory Bank not initialized. Call initialize_memory_bank first."
-            )
+        if err := _ensure_memory_bank_ready():
+            return format_error_response(err)
 
         # Validate inputs
         if error := validate_memory_fact(fact):
@@ -530,10 +567,8 @@ def register_tools(mcp: FastMCP):
         if error:
             return format_error_response(error)
 
-        if not app.is_ready():
-            return format_error_response(
-                "Memory Bank not initialized. Call initialize_memory_bank first."
-            )
+        if err := _ensure_memory_bank_ready():
+            return format_error_response(err)
 
         try:
             # First fetch to verify ownership

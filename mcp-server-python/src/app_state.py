@@ -2,7 +2,7 @@
 
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, List
 import uuid
 from contextvars import ContextVar
 
@@ -10,6 +10,11 @@ from .config import Config
 
 # Context variable to track the session ID for the current request
 current_session_id: ContextVar[Optional[str]] = ContextVar("current_session_id", default=None)
+
+# Context variables to track the authenticated user for the current request (OAuth bearer token)
+current_user_id: ContextVar[Optional[str]] = ContextVar("current_user_id", default=None)
+current_user_email: ContextVar[Optional[str]] = ContextVar("current_user_email", default=None)
+current_user_scopes: ContextVar[Optional[List[str]]] = ContextVar("current_user_scopes", default=None)
 
 
 @dataclass

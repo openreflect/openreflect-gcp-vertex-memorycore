@@ -78,8 +78,28 @@ Your server must handle:
 ### 5. Authentication (Optional but Recommended)
 
 - **Bearer Token**: Can be configured via `CONNECTOR_BEARER_TOKEN` environment variable
-- **OAuth**: Recommended for production using dynamic client registration
+- **OAuth (Recommended)**: Implement MCP OAuth 2.1 (Authorization Code + PKCE) using the MCP authorization spec
 - **Service Account**: For GCP deployments (already implemented)
+
+#### OAuth for ChatGPT MCP (Connector-level OAuth)
+
+ChatGPT’s MCP connectors support **OAuth 2.1 with PKCE** and **Dynamic Client Registration (DCR)** as described in the MCP authorization spec.
+
+This server now exposes the required discovery endpoints:
+
+- `GET /.well-known/oauth-protected-resource` (RFC 9728 protected resource metadata)
+- `GET /.well-known/oauth-authorization-server` (RFC 8414 authorization server metadata)
+- `POST /oauth/register` (RFC 7591 dynamic client registration)
+- `GET /oauth/authorize` (authorization endpoint; redirects user to Google sign-in)
+- `GET /oauth/callback` (Google callback; redirects back to ChatGPT with an auth code)
+- `POST /oauth/token` (token endpoint; exchanges code+PKCE verifier for an access token)
+
+**Important redirect URIs (ChatGPT)**:
+
+- Production: `https://chatgpt.com/connector_platform_oauth_redirect`
+- Review: `https://platform.openai.com/apps-manage/oauth`
+
+After OAuth completes, ChatGPT will attach `Authorization: Bearer <token>` on every MCP request.
 
 ### 6. Testing Tools
 
@@ -174,8 +194,10 @@ Before testing with ChatGPT web interface:
    - In Connectors tab, click "Create"
    - Fill in connector details:
      - Name: "OpenReflect" (or your preferred name)
-     - MCP Server URL: `https://your-service.a.run.app/sse`
-     - Authentication: Bearer token (if using `CONNECTOR_BEARER_TOKEN`)
+     - **MCP Server URL (OAuth)**: `https://your-service.a.run.app/sse-auth`
+       - Use `/sse-auth` for ChatGPT connector-level OAuth (prevents OAuth config probe timeouts).
+     - **MCP Server URL (No Auth / local)**: `https://your-service.a.run.app/sse`
+     - Authentication: OAuth (recommended) or Bearer token (if using `CONNECTOR_BEARER_TOKEN`)
 
 3. **Test Connection**:
    - Toggle connector on in a new conversation

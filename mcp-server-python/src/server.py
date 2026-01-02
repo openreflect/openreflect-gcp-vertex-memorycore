@@ -5,7 +5,6 @@ import os
 import sys
 from contextlib import asynccontextmanager
 
-import vertexai
 from mcp.server.fastmcp import FastMCP
 
 from .app_state import app
@@ -34,33 +33,18 @@ async def lifespan(server: FastMCP):
     
     # Load configuration from environment
     app.config = Config.from_env()
-    
-    # Try to initialize Vertex AI client if configured
-    if app.config.is_valid():
-        try:
-            app.client = vertexai.Client(
-                project=app.config.project_id,
-                location=app.config.location,
-            )
 
-            # Attempt to load Agent Engine from environment
-            if app.config.agent_engine_name:
-                try:
-                    app.agent_engine = app.client.agent_engines.get(
-                        name=app.config.agent_engine_name
-                    )
-                    logger.info(
-                        f"Loaded Agent Engine from env: {app.config.agent_engine_name}"
-                    )
-                except Exception as e:
-                    logger.warning(f"Could not load Agent Engine: {e}")
-                    logger.info("Use initialize_memory_bank to create one.")
-
-            app.initialized = True
-            logger.info("Vertex AI client initialized from environment")
-        except Exception as e:
-            logger.warning(f"Could not initialize Vertex AI client: {e}")
-            logger.info("Server running - use initialize_memory_bank to set up")
+    # NOTE: We intentionally defer Vertex AI network initialization until the first
+    # memory tool call. This keeps cold starts fast and prevents connector OAuth
+    # configuration timeouts in clients like ChatGPT.
+    #
+    # Memory tools call a lazy initializer that:
+    # - creates vertexai.Client
+    # - loads AGENT_ENGINE_NAME when set
+    # - otherwise requires initialize_memory_bank
+    app.initialized = app.config.is_valid()
+    if app.initialized:
+        logger.info("Config loaded from environment (Vertex init deferred until first tool call)")
     else:
         logger.info("No configuration found - use initialize_memory_bank to get started")
     
