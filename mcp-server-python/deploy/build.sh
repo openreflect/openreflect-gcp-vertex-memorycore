@@ -2,8 +2,8 @@
 set -e
 
 # Configuration
-PROJECT_ID="directed-asset-479716-f6"
-IMAGE_NAME="openreflect-mcp"
+PROJECT_ID="meta-shape-472622-s9"
+IMAGE_NAME="openreflect-mcp-trevor-v2"
 TAG="latest"
 
 echo "========================================================"

@@ -52,6 +52,105 @@ mcp_server = create_server()
 _sse_sessions: Dict[str, "asyncio.Queue[Dict[str, Any]]"] = {}
 
 
+def _to_dict(obj: Any) -> Dict[str, Any]:
+    """Convert an object to a dictionary using model_dump or jsonable_encoder."""
+    if isinstance(obj, dict):
+        return obj
+    if hasattr(obj, "model_dump"):
+        return obj.model_dump()
+    return jsonable_encoder(obj)
+
+
+def _sanitize_prompt(prompt: Any) -> Dict[str, Any]:
+    """
+    Sanitize prompt objects to meet Gemini CLI's stricter validation requirements.
+
+    Gemini expects certain fields to be non-null even if they're optional in MCP spec:
+    - title: string (fallback to name or description)
+    - icons: array (default to empty array)
+    - arguments[].description: string (default to empty string)
+    - _meta: object (default to empty object)
+    """
+    sanitized = _to_dict(prompt)
+
+    # Ensure title is present (use name or description as fallback)
+    if sanitized.get("title") is None:
+        sanitized["title"] = sanitized.get("name") or sanitized.get("description") or "Untitled Prompt"
+
+    # Ensure icons is an array
+    if sanitized.get("icons") is None:
+        sanitized["icons"] = []
+
+    # Ensure _meta is an object
+    if sanitized.get("_meta") is None:
+        sanitized["_meta"] = {}
+
+    # Sanitize arguments array
+    if "arguments" in sanitized and isinstance(sanitized["arguments"], list):
+        for arg in sanitized["arguments"]:
+            if isinstance(arg, dict) and arg.get("description") is None:
+                arg["description"] = ""
+
+    return sanitized
+
+
+def _sanitize_content_item(item: Any) -> Dict[str, Any]:
+    """
+    Sanitize content items in tool responses for Gemini CLI compatibility.
+
+    Gemini expects:
+    - annotations: object (default to empty object)
+    - _meta: object/record (default to empty object)
+    """
+    sanitized = _to_dict(item)
+
+    # Ensure annotations is an object
+    if sanitized.get("annotations") is None:
+        sanitized["annotations"] = {}
+
+    # Ensure _meta is an object
+    if sanitized.get("_meta") is None:
+        sanitized["_meta"] = {}
+
+    return sanitized
+
+
+def _sanitize_tool(tool: Any) -> Dict[str, Any]:
+    """
+    Sanitize tool objects to meet Gemini CLI's stricter validation requirements.
+
+    Gemini expects certain fields to be non-null even if they're optional in MCP spec:
+    - title: string (fallback to name or description)
+    - icons: array (default to empty array)
+    - annotations: object (default to empty object)
+    - execution: object (default to empty object)
+    - _meta: object (default to empty object)
+    """
+    sanitized = _to_dict(tool)
+
+    # Ensure title is present (use name or description as fallback)
+    if sanitized.get("title") is None:
+        sanitized["title"] = sanitized.get("name") or sanitized.get("description") or "Untitled Tool"
+
+    # Ensure icons is an array
+    if sanitized.get("icons") is None:
+        sanitized["icons"] = []
+
+    # Ensure annotations is an object
+    if sanitized.get("annotations") is None:
+        sanitized["annotations"] = {}
+
+    # Ensure execution is an object
+    if sanitized.get("execution") is None:
+        sanitized["execution"] = {}
+
+    # Ensure _meta is an object
+    if sanitized.get("_meta") is None:
+        sanitized["_meta"] = {}
+
+    return sanitized
+
+
 def _to_jsonable(obj: Any) -> Any:
     """
     Convert arbitrary objects into JSON-serializable structures.
@@ -986,16 +1085,21 @@ async def _handle_jsonrpc(body: Dict[str, Any]) -> Optional[Dict[str, Any]]:
         tools = await mcp_server.list_tools()
         tools_payload = tools.model_dump() if hasattr(tools, "model_dump") else tools
         if isinstance(tools_payload, dict) and "tools" in tools_payload:
+            # Sanitize each tool for Gemini CLI compatibility
+            tools_payload["tools"] = [
+                _sanitize_tool(t) for t in tools_payload["tools"]
+            ]
             result = tools_payload
         elif isinstance(tools_payload, list):
-            result = {"tools": tools_payload}
+            # Sanitize each tool for Gemini CLI compatibility
+            result = {"tools": [_sanitize_tool(t) for t in tools_payload]}
         else:
             result = {"tools": tools_payload}
 
     elif method == "tools/call":
         name = params.get("name")
         args = params.get("arguments", {})
-        
+
         tool_result = await mcp_server.call_tool(name, args)
         if (
             isinstance(tool_result, (list, tuple))
@@ -1014,9 +1118,14 @@ async def _handle_jsonrpc(body: Dict[str, Any]) -> Optional[Dict[str, Any]]:
             prompts.model_dump() if hasattr(prompts, "model_dump") else prompts
         )
         if isinstance(prompts_payload, dict) and "prompts" in prompts_payload:
+            # Sanitize each prompt for Gemini CLI compatibility
+            prompts_payload["prompts"] = [
+                _sanitize_prompt(p) for p in prompts_payload["prompts"]
+            ]
             result = prompts_payload
         elif isinstance(prompts_payload, list):
-            result = {"prompts": prompts_payload}
+            # Sanitize each prompt for Gemini CLI compatibility
+            result = {"prompts": [_sanitize_prompt(p) for p in prompts_payload]}
         else:
             result = {"prompts": prompts_payload}
             
@@ -1126,6 +1235,49 @@ async def message_endpoint(request: Request, session_id: str = None):
 
     except Exception as e:
         logger.error(f"Error processing message: {e}", exc_info=True)
+        return {
+            "jsonrpc": "2.0",
+            "id": body.get("id") if isinstance(body, dict) else None,
+            "error": {"code": -32603, "message": str(e)},
+        }
+
+# ============================================================================
+# HTTP Streamable Transport (for Gemini CLI and other MCP clients)
+# ============================================================================
+
+@fastapi_app.post("/mcp")
+@fastapi_app.post("/mcp/")
+async def mcp_http_streamable(request: Request):
+    """
+    HTTP streamable transport endpoint for MCP.
+
+    This endpoint provides standard HTTP POST request/response transport
+    for MCP clients that prefer this over SSE (e.g., Gemini CLI with --httpUrl).
+
+    Accepts JSON-RPC 2.0 messages and returns JSON-RPC 2.0 responses.
+    """
+    if (resp := _authorize(request)) is not None:
+        return resp
+
+    try:
+        body = await request.json()
+    except json.JSONDecodeError:
+        raise HTTPException(status_code=400, detail="Invalid JSON")
+
+    logger.info(f"HTTP streamable request: {body.get('method', 'unknown')}")
+
+    try:
+        resp = await _handle_jsonrpc(body)
+
+        # For notifications (no id), return 204 No Content
+        if resp is None:
+            return Response(status_code=204)
+
+        # Return JSON-RPC response
+        return resp
+
+    except Exception as e:
+        logger.error(f"Error processing HTTP streamable request: {e}", exc_info=True)
         return {
             "jsonrpc": "2.0",
             "id": body.get("id") if isinstance(body, dict) else None,

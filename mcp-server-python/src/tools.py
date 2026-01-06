@@ -195,7 +195,7 @@ def register_tools(mcp: FastMCP):
         location: str = "us-central1",
         memory_topics: Optional[List[str]] = None,
         agent_engine_name: Optional[str] = None,
-    ) -> Dict[str, Any]:
+    ):
         """
         Initialize Memory Bank with your Google Cloud project.
 
@@ -299,7 +299,7 @@ def register_tools(mcp: FastMCP):
         conversation: List[Dict[str, str]],
         key: Optional[str] = None,
         wait_for_completion: bool = True,
-    ) -> Dict[str, Any]:
+    ):
         """
         Generate memories from a conversation.
 

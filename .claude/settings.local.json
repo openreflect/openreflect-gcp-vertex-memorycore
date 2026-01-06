@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:docs.cloud.google.com)",
+      "Bash(env)",
+      "Bash(gcloud run services describe:*)",
+      "Bash(gcloud logging read:*)",
+      "Bash(gcloud run:*)",
+      "Bash(echo:*)",
+      "WebSearch",
+      "Bash(bash ../deploy/build.sh)",
+      "Bash(bash:*)"
+    ]
+  }
+}
