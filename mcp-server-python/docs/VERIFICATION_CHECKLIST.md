@@ -57,7 +57,7 @@ The implementation uses a **subprocess-based stdio bridge**:
 
 ### Service Account Configuration
 
-- ✅ Service account name: `vertex-memory-bank-mcp-sa`
+- ✅ Service account name: `YOUR_SERVICE_ACCOUNT`
 - ✅ IAM roles documented: `roles/aiplatform.user`, `roles/run.invoker`
 - ✅ Setup commands documented in DEPLOYMENT.md
 

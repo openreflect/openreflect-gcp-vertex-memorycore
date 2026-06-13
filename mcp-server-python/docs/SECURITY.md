@@ -10,9 +10,9 @@ Verify the service account has only the minimum required permissions:
 
 ```bash
 # Check current IAM bindings
-gcloud projects get-iam-policy directed-asset-479716-f6 \
+gcloud projects get-iam-policy YOUR_PROJECT_ID \
   --flatten="bindings[].members" \
-  --filter="bindings.members:serviceAccount:vertex-memory-bank-mcp-sa@directed-asset-479716-f6.iam.gserviceaccount.com" \
+  --filter="bindings.members:serviceAccount:YOUR_SERVICE_ACCOUNT@YOUR_PROJECT_ID.iam.gserviceaccount.com" \
   --format="table(bindings.role)"
 ```
 
@@ -29,15 +29,15 @@ gcloud projects get-iam-policy directed-asset-479716-f6 \
 
 ```bash
 # List all roles for the service account
-gcloud projects get-iam-policy directed-asset-479716-f6 \
+gcloud projects get-iam-policy YOUR_PROJECT_ID \
   --flatten="bindings[].members" \
-  --filter="bindings.members:serviceAccount:vertex-memory-bank-mcp-sa@directed-asset-479716-f6.iam.gserviceaccount.com"
+  --filter="bindings.members:serviceAccount:YOUR_SERVICE_ACCOUNT@YOUR_PROJECT_ID.iam.gserviceaccount.com"
 
 # Test Vertex AI access
 gcloud ai-platform models list \
   --region=us-central1 \
-  --project=directed-asset-479716-f6 \
-  --impersonate-service-account=vertex-memory-bank-mcp-sa@directed-asset-479716-f6.iam.gserviceaccount.com
+  --project=YOUR_PROJECT_ID \
+  --impersonate-service-account=YOUR_SERVICE_ACCOUNT@YOUR_PROJECT_ID.iam.gserviceaccount.com
 ```
 
 ## Network Security
@@ -56,7 +56,7 @@ gcloud ai-platform models list \
      --vpc-connector=CONNECTOR_NAME \
      --vpc-egress=private-ranges-only \
      --region us-central1 \
-     --project directed-asset-479716-f6
+     --project YOUR_PROJECT_ID
    ```
 
 2. **Enable Authentication** for production:
@@ -64,7 +64,7 @@ gcloud ai-platform models list \
    gcloud run services update openreflect-mcp \
      --no-allow-unauthenticated \
      --region us-central1 \
-     --project directed-asset-479716-f6
+     --project YOUR_PROJECT_ID
    ```
 
 3. **Restrict Ingress** to specific sources if needed:
@@ -72,7 +72,7 @@ gcloud ai-platform models list \
    gcloud run services update openreflect-mcp \
      --ingress=internal \
      --region us-central1 \
-     --project directed-asset-479716-f6
+     --project YOUR_PROJECT_ID
    ```
 
 ## Authentication & Authorization
@@ -105,7 +105,7 @@ gcloud ai-platform models list \
    gcloud run services update openreflect-mcp \
      --no-allow-unauthenticated \
      --region us-central1 \
-     --project directed-asset-479716-f6
+     --project YOUR_PROJECT_ID
    ```
 
 3. **Use Identity-Aware Proxy (IAP)** for additional security layer
@@ -125,19 +125,19 @@ gcloud ai-platform models list \
    # Create secret
    echo -n "sensitive-value" | gcloud secrets create api-key \
      --data-file=- \
-     --project directed-asset-479716-f6
+     --project YOUR_PROJECT_ID
    
    # Grant access to service account
    gcloud secrets add-iam-policy-binding api-key \
-     --member="serviceAccount:vertex-memory-bank-mcp-sa@directed-asset-479716-f6.iam.gserviceaccount.com" \
+     --member="serviceAccount:YOUR_SERVICE_ACCOUNT@YOUR_PROJECT_ID.iam.gserviceaccount.com" \
      --role="roles/secretmanager.secretAccessor" \
-     --project directed-asset-479716-f6
+     --project YOUR_PROJECT_ID
    
    # Mount secret in Cloud Run
    gcloud run services update openreflect-mcp \
      --update-secrets API_KEY=api-key:latest \
      --region us-central1 \
-     --project directed-asset-479716-f6
+     --project YOUR_PROJECT_ID
    ```
 
 ## Container Security
@@ -153,7 +153,7 @@ gcloud ai-platform models list \
 **Recommendations:**
 1. **Scan images for vulnerabilities**:
    ```bash
-   gcloud container images scan gcr.io/directed-asset-479716-f6/openreflect-mcp:latest
+   gcloud container images scan gcr.io/YOUR_PROJECT_ID/openreflect-mcp:latest
    ```
 
 2. **Use distroless images** for better security:
@@ -185,16 +185,16 @@ gcloud ai-platform models list \
      resource.labels.service_name=openreflect-mcp" \
      --limit 100 \
      --format json \
-     --project directed-asset-479716-f6 | grep -i "password\|token\|key\|secret"
+     --project YOUR_PROJECT_ID | grep -i "password\|token\|key\|secret"
    ```
 
 2. **Enable audit logs** for Vertex AI operations:
    ```bash
    gcloud logging sinks create vertex-ai-audit \
-     bigquery.googleapis.com/projects/directed-asset-479716-f6/datasets/audit_logs \
+     bigquery.googleapis.com/projects/YOUR_PROJECT_ID/datasets/audit_logs \
      --log-filter='resource.type="aiplatform.googleapis.com/Model" OR \
        resource.type="aiplatform.googleapis.com/Endpoint"' \
-     --project directed-asset-479716-f6
+     --project YOUR_PROJECT_ID
    ```
 
 ## Input Validation
@@ -225,7 +225,7 @@ Review validation functions:
 1. **Use Cloud Armor** for DDoS protection:
    ```bash
    gcloud compute security-policies create mcp-security-policy \
-     --project directed-asset-479716-f6
+     --project YOUR_PROJECT_ID
    ```
 
 2. **Implement rate limiting** in application:
@@ -259,9 +259,9 @@ Review validation functions:
 ```bash
 # Enable Data Access audit logs
 gcloud logging sinks create data-access-audit \
-  bigquery.googleapis.com/projects/directed-asset-479716-f6/datasets/audit_logs \
+  bigquery.googleapis.com/projects/YOUR_PROJECT_ID/datasets/audit_logs \
   --log-filter='protoPayload.serviceName="aiplatform.googleapis.com"' \
-  --project directed-asset-479716-f6
+  --project YOUR_PROJECT_ID
 ```
 
 ## Security Testing
@@ -283,7 +283,7 @@ gcloud logging sinks create data-access-audit \
 
 3. **Container Scanning**:
    ```bash
-   gcloud container images scan gcr.io/directed-asset-479716-f6/openreflect-mcp:latest
+   gcloud container images scan gcr.io/YOUR_PROJECT_ID/openreflect-mcp:latest
    ```
 
 ## Incident Response

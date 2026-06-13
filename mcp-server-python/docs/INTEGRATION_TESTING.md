@@ -119,7 +119,7 @@ async def test_initialize_memory_bank(base_url: str):
             "params": {
                 "name": "initialize_memory_bank",
                 "arguments": {
-                    "project_id": "directed-asset-479716-f6",
+                    "project_id": "YOUR_PROJECT_ID",
                     "location": "us-central1"
                 }
             }
@@ -318,7 +318,7 @@ async def test_with_mcp_client():
             result = await session.call_tool(
                 "initialize_memory_bank",
                 {
-                    "project_id": "directed-asset-479716-f6",
+                    "project_id": "YOUR_PROJECT_ID",
                     "location": "us-central1"
                 }
             )
@@ -340,7 +340,7 @@ async def test_full_workflow():
         # 1. Initialize memory bank
         init_result = await call_tool(
             client, base_url, "initialize_memory_bank",
-            {"project_id": "directed-asset-479716-f6", "location": "us-central1"}
+            {"project_id": "YOUR_PROJECT_ID", "location": "us-central1"}
         )
         print(f"Initialized: {init_result}")
         
@@ -462,12 +462,12 @@ asyncio.run(load_test("https://openreflect-mcp-xxxxx-uc.a.run.app", 100))
 # Check service status
 gcloud run services describe openreflect-mcp \
   --region us-central1 \
-  --project directed-asset-479716-f6
+  --project YOUR_PROJECT_ID
 
 # View recent logs
 gcloud run services logs read openreflect-mcp \
   --region us-central1 \
-  --project directed-asset-479716-f6 \
+  --project YOUR_PROJECT_ID \
   --limit 50
 
 # Test health endpoint

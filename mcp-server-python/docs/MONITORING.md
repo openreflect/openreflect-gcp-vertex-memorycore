@@ -11,7 +11,7 @@ View logs using gcloud CLI:
 ```bash
 gcloud run services logs read openreflect-mcp \
   --region us-central1 \
-  --project directed-asset-479716-f6 \
+  --project YOUR_PROJECT_ID \
   --limit 50
 ```
 
@@ -22,7 +22,7 @@ Stream logs in real-time:
 ```bash
 gcloud run services logs tail openreflect-mcp \
   --region us-central1 \
-  --project directed-asset-479716-f6
+  --project YOUR_PROJECT_ID
 ```
 
 ### Filter Logs
@@ -34,7 +34,7 @@ gcloud logging read "resource.type=cloud_run_revision AND \
   resource.labels.service_name=openreflect-mcp AND \
   severity>=ERROR" \
   --limit 50 \
-  --project directed-asset-479716-f6
+  --project YOUR_PROJECT_ID
 ```
 
 ## Cloud Monitoring Metrics
@@ -75,7 +75,7 @@ You can create custom metrics for MCP-specific operations:
 # Example: Track memory operations
 gcloud logging write openreflect-mcp-metrics \
   '{"operation":"generate_memories","duration_ms":1500,"success":true}' \
-  --project directed-asset-479716-f6
+  --project YOUR_PROJECT_ID
 ```
 
 ## Alert Policies
@@ -86,7 +86,7 @@ Use the `monitoring.yaml` file to create alert policies:
 
 ```bash
 gcloud alpha monitoring policies create --policy-from-file=monitoring.yaml \
-  --project directed-asset-479716-f6
+  --project YOUR_PROJECT_ID
 ```
 
 ### Manual Alert Creation
@@ -110,14 +110,14 @@ gcloud alpha monitoring channels create \
   --display-name="Memory Bank MCP Alerts" \
   --type=email \
   --channel-labels=email_address=your-email@example.com \
-  --project directed-asset-479716-f6
+  --project YOUR_PROJECT_ID
 
 # Slack channel (requires webhook URL)
 gcloud alpha monitoring channels create \
   --display-name="Memory Bank MCP Slack" \
   --type=slack \
   --channel-labels=url=https://hooks.slack.com/services/YOUR/WEBHOOK/URL \
-  --project directed-asset-479716-f6
+  --project YOUR_PROJECT_ID
 ```
 
 ## Dashboards
@@ -177,7 +177,7 @@ gcloud logging metrics create mcp_generate_memories \
   --log-filter='resource.type="cloud_run_revision" AND
     resource.labels.service_name="openreflect-mcp" AND
     jsonPayload.operation="generate_memories"' \
-  --project directed-asset-479716-f6
+  --project YOUR_PROJECT_ID
 
 # Memory retrieval operations
 gcloud logging metrics create mcp_retrieve_memories \
@@ -185,7 +185,7 @@ gcloud logging metrics create mcp_retrieve_memories \
   --log-filter='resource.type="cloud_run_revision" AND
     resource.labels.service_name="openreflect-mcp" AND
     jsonPayload.operation="retrieve_memories"' \
-  --project directed-asset-479716-f6
+  --project YOUR_PROJECT_ID
 ```
 
 ## SLO Configuration
@@ -201,7 +201,7 @@ gcloud alpha monitoring slo create \
   --display-name="Availability SLO" \
   --goal=0.999 \
   --rolling-period=30d \
-  --project directed-asset-479716-f6
+  --project YOUR_PROJECT_ID
 ```
 
 ### Latency SLO
@@ -215,7 +215,7 @@ gcloud alpha monitoring slo create \
   --display-name="Latency SLO" \
   --goal=0.95 \
   --rolling-period=30d \
-  --project directed-asset-479716-f6
+  --project YOUR_PROJECT_ID
 ```
 
 ## Troubleshooting
@@ -229,7 +229,7 @@ gcloud alpha monitoring slo create \
      severity>=ERROR" \
      --limit 100 \
      --format json \
-     --project directed-asset-479716-f6
+     --project YOUR_PROJECT_ID
    ```
 
 2. Check Vertex AI API status

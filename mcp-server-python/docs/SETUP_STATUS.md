@@ -5,7 +5,7 @@
 ## ✅ Completed Setup
 
 ### 1. Google Cloud Project
-- **Project ID**: `directed-asset-479716-f6`
+- **Project ID**: `YOUR_PROJECT_ID`
 - **Project Number**: `429269489266`
 - **Status**: ACTIVE
 - **Owner**: `infoopenreflect@gmail.com` (roles/owner)
@@ -16,8 +16,8 @@
 - ✅ **Container Registry API** (`containerregistry.googleapis.com`) - Enabled
 
 ### 3. Service Account
-- **Name**: `cloud-run-openreflect-112925`
-- **Email**: `cloud-run-openreflect-112925@directed-asset-479716-f6.iam.gserviceaccount.com`
+- **Name**: `YOUR_SERVICE_ACCOUNT`
+- **Email**: `YOUR_SERVICE_ACCOUNT@YOUR_PROJECT_ID.iam.gserviceaccount.com`
 - **Roles**:
   - ✅ `roles/aiplatform.user` - For Vertex AI Memory Bank access
   - ✅ `roles/run.admin` - For Cloud Run service management
@@ -33,20 +33,20 @@
 
 ### 6. gcloud CLI
 - ✅ Authenticated as `infoopenreflect@gmail.com`
-- ✅ Project set to `directed-asset-479716-f6`
+- ✅ Project set to `YOUR_PROJECT_ID`
 
 ## ⚠️ Configuration Notes
 
 ### Service Account Name Mismatch
 The codebase documentation references:
-- `vertex-memory-bank-mcp-sa@directed-asset-479716-f6.iam.gserviceaccount.com`
+- `YOUR_SERVICE_ACCOUNT@YOUR_PROJECT_ID.iam.gserviceaccount.com`
 
 But the actual service account is:
-- `cloud-run-openreflect-112925@directed-asset-479716-f6.iam.gserviceaccount.com`
+- `YOUR_SERVICE_ACCOUNT@YOUR_PROJECT_ID.iam.gserviceaccount.com`
 
 **Options:**
-1. Use existing service account (`cloud-run-openreflect-112925`)
-2. Create new service account matching documentation (`vertex-memory-bank-mcp-sa`)
+1. Use existing service account (`YOUR_SERVICE_ACCOUNT`)
+2. Create new service account matching documentation (`YOUR_SERVICE_ACCOUNT`)
 
 ## 📋 Ready to Deploy
 
@@ -61,21 +61,21 @@ All prerequisites are met. You can now:
 2. **Deploy to Cloud Run:**
    ```bash
    gcloud run deploy openreflect-mcp \
-     --image gcr.io/directed-asset-479716-f6/openreflect-mcp:latest \
+     --image gcr.io/YOUR_PROJECT_ID/openreflect-mcp:latest \
      --region us-central1 \
-     --service-account cloud-run-openreflect-112925@directed-asset-479716-f6.iam.gserviceaccount.com \
+     --service-account YOUR_SERVICE_ACCOUNT@YOUR_PROJECT_ID.iam.gserviceaccount.com \
      --allow-unauthenticated \
      --timeout 3600 \
-     --set-env-vars GOOGLE_CLOUD_PROJECT=directed-asset-479716-f6,GOOGLE_CLOUD_LOCATION=us-central1
+     --set-env-vars GOOGLE_CLOUD_PROJECT=YOUR_PROJECT_ID,GOOGLE_CLOUD_LOCATION=us-central1
    ```
 
 3. **Or use provisioning script:**
    ```bash
    python deploy/provisioning/provision_user.py \
-     --project directed-asset-479716-f6 \
+     --project YOUR_PROJECT_ID \
      --user-id "test-user" \
-     --image "gcr.io/directed-asset-479716-f6/openreflect-mcp:latest" \
-     --service-account "cloud-run-openreflect-112925@directed-asset-479716-f6.iam.gserviceaccount.com" \
+     --image "gcr.io/YOUR_PROJECT_ID/openreflect-mcp:latest" \
+     --service-account "YOUR_SERVICE_ACCOUNT@YOUR_PROJECT_ID.iam.gserviceaccount.com" \
      --engine-name "" \
      --token "your-bearer-token"
    ```

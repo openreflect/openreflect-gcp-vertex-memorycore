@@ -2,7 +2,7 @@
 set -e
 
 # Configuration
-PROJECT_ID="directed-asset-479716-f6"
+PROJECT_ID="YOUR_PROJECT_ID"
 IMAGE_NAME="openreflect-mcp"
 TAG="latest"
 

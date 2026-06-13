@@ -11,7 +11,7 @@ This guide details the deployment of the Vertex AI Memory Bank MCP server to Goo
 
 ## Prerequisites
 
-1.  **Google Cloud Project**: `directed-asset-479716-f6`
+1.  **Google Cloud Project**: `YOUR_PROJECT_ID`
 2.  **Service Account**: Must have `roles/aiplatform.user` and `roles/run.invoker`.
 3.  **Local Tools**:
     -   Docker
@@ -30,7 +30,7 @@ chmod +x build.sh
 ./build.sh
 ```
 
-This pushes the image to: `gcr.io/directed-asset-479716-f6/openreflect-mcp:latest`
+This pushes the image to: `gcr.io/YOUR_PROJECT_ID/openreflect-mcp:latest`
 
 ### 2. Provision a User Service
 
@@ -39,12 +39,12 @@ Use the provisioning script to spin up a dedicated service for a user.
 ```bash
 # Example
 python provisioning/provision_user.py \
-  --project directed-asset-479716-f6 \
+  --project YOUR_PROJECT_ID \
   --user-id "user_123" \
-  --image "gcr.io/directed-asset-479716-f6/openreflect-mcp:latest" \
-  --service-account "vertex-memory-bank-mcp-sa@directed-asset-479716-f6.iam.gserviceaccount.com" \
-  --engine-name "projects/directed-asset-479716-f6/locations/us-central1/collections/default_collection/engines/agent-engine-user-123" \
-  --token "secret-bearer-token-for-user-123"
+  --image "gcr.io/YOUR_PROJECT_ID/openreflect-mcp:latest" \
+  --service-account "YOUR_SERVICE_ACCOUNT@YOUR_PROJECT_ID.iam.gserviceaccount.com" \
+  --engine-name "projects/YOUR_PROJECT_ID/locations/us-central1/collections/default_collection/engines/agent-engine-user-123" \
+  --token "YOUR_CONNECTOR_BEARER_TOKEN"
 ```
 
 **Output**:
@@ -60,7 +60,7 @@ SSE connections require longer timeouts. Set timeout to 3600 seconds (1 hour):
 gcloud run services update SERVICE_NAME \
   --timeout 3600 \
   --region us-central1 \
-  --project directed-asset-479716-f6
+  --project YOUR_PROJECT_ID
 ```
 
 ### 4. Connect the MCP Client (ChatGPT web)
