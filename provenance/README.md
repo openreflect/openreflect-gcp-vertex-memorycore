@@ -12,6 +12,23 @@ This directory is intentionally separate from the root README. The public
 description should remain conservative until the provenance layer is implemented
 in code.
 
+## Project Stage
+
+The provenance layer is in an early project cycle.
+
+This public directory records the intended architecture, vocabulary, scenarios,
+and implementation boundary. Active design, prototyping, deployment wiring, and
+private operational testing may continue in a private repository, private fork,
+or downstream control-plane project before selected pieces are promoted back
+into this public codebase.
+
+That split is deliberate:
+
+- public files describe the generalized architecture and reusable model;
+- private work can carry environment-specific details, live deployment values,
+  test traces, and operational findings;
+- promoted public changes should be generalized, documented, and safe to reuse.
+
 ## Goal
 
 MemoryCore should support shared memory across MCP-capable clients while keeping
@@ -61,4 +78,3 @@ Current implementation status:
 - First-class provenance records: not implemented.
 - Structured audit log: not implemented.
 - Cross-client handoff records: not implemented.
-

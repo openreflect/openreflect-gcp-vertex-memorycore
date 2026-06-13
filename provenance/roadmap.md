@@ -3,6 +3,21 @@
 This roadmap lists implementation steps for turning the provenance design into
 code.
 
+## Development Model
+
+The provenance layer is early-cycle work. Some implementation experiments may
+be developed privately first, especially where they involve live deployments,
+real client behavior, operational traces, or environment-specific integration
+details.
+
+Public promotion criteria:
+
+- the concept is generalized beyond one deployment;
+- private identifiers, logs, and credentials have been removed;
+- behavior is documented with public-safe examples;
+- tests or verification notes exist for the promoted behavior;
+- the root README remains accurate about what is actually implemented.
+
 ## Phase 1: Request Context Capture
 
 - Add optional request metadata fields to MCP tool arguments:
@@ -61,4 +76,3 @@ code.
 - Integration test structured recorder behavior with a local emulator or
   mockable backend.
 - Add regression tests for clients that omit metadata.
-
