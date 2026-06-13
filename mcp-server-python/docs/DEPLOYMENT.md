@@ -63,9 +63,14 @@ gcloud run services update SERVICE_NAME \
   --project YOUR_PROJECT_ID
 ```
 
-### 4. Connect the MCP Client (ChatGPT web)
+### 4. Connect an MCP Client
 
-Configure ChatGPT MCP connector with SSE URL and bearer token:
+For clients that support Streamable HTTP, use the single MCP endpoint:
+
+- URL: `https://SERVICE_URL/mcp`
+- Header: `Authorization: Bearer <token>`
+
+For older clients that still require HTTP+SSE, use the legacy SSE URL:
 
 - URL: `https://SERVICE_URL/sse`
 - Header: `Authorization: Bearer <token>`
@@ -75,6 +80,13 @@ Validation curls:
 ```bash
 # Health
 curl -i https://SERVICE_URL/health
+
+# Streamable HTTP initialize
+curl -i https://SERVICE_URL/mcp \
+  -H "Content-Type: application/json" \
+  -H "Accept: application/json, text/event-stream" \
+  -H "Authorization: Bearer <token>" \
+  -d '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-03-26","capabilities":{},"clientInfo":{"name":"curl","version":"1.0"}}}'
 
 # SSE handshake (expects endpoint event)
 curl -N -H "Authorization: Bearer <token>" https://SERVICE_URL/sse

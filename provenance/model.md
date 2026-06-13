@@ -22,7 +22,7 @@ Suggested fields:
   "client_name": "ChatGPT",
   "client_type": "mcp_client",
   "client_version": "optional-client-version",
-  "transport": "sse|stdio|http|other"
+  "transport": "stdio|streamable_http|sse|http|other"
 }
 ```
 
@@ -112,4 +112,3 @@ The provenance layer should avoid storing full prompt or conversation text by
 default. Store stable IDs, redacted summaries, hashes, timestamps, tool names,
 and client/workflow metadata unless a deployment explicitly opts into richer
 capture.
-

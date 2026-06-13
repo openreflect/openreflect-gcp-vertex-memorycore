@@ -1,4 +1,10 @@
-"""HTTP server module for Cloud Run deployment using SSE transport."""
+"""HTTP server module for Cloud Run deployment.
+
+This module supports two remote MCP transports:
+
+- Streamable HTTP at `/mcp` for current remote MCP clients.
+- Legacy HTTP+SSE at `/sse` + `/message` for older clients.
+"""
 
 import asyncio
 from dataclasses import asdict, is_dataclass
@@ -34,6 +40,22 @@ mcp_server = create_server()
 
 # Active SSE sessions: session_id -> outbound JSON-RPC message queue
 _sse_sessions: Dict[str, "asyncio.Queue[Dict[str, Any]]"] = {}
+
+# Active Streamable HTTP sessions. The current implementation is stateless for
+# tool execution but tracks session IDs for clients that expect MCP session
+# lifecycle headers on the modern single-endpoint transport.
+_streamable_sessions: set[str] = set()
+
+MCP_PROTOCOL_VERSION_HEADER = "MCP-Protocol-Version"
+MCP_SESSION_ID_HEADER = "Mcp-Session-Id"
+MCP_STREAMABLE_ENDPOINT = "/mcp"
+DEFAULT_PROTOCOL_VERSION = "2025-03-26"
+SUPPORTED_PROTOCOL_VERSIONS = {
+    "2024-11-05",  # legacy clients
+    "2025-03-26",  # Streamable HTTP introduced
+    "2025-06-18",
+    "2025-11-25",
+}
 
 
 def _to_jsonable(obj: Any) -> Any:
@@ -139,6 +161,25 @@ def _authorize(request: Request) -> Optional[Response]:
         )
     return None
 
+
+def _negotiate_protocol_version(request: Request) -> str:
+    """Return the MCP protocol version to echo on HTTP responses."""
+    requested = request.headers.get(MCP_PROTOCOL_VERSION_HEADER)
+    if requested in SUPPORTED_PROTOCOL_VERSIONS:
+        return requested
+    return DEFAULT_PROTOCOL_VERSION
+
+
+def _mcp_response_headers(
+    request: Request,
+    session_id: Optional[str] = None,
+) -> Dict[str, str]:
+    """Build common MCP response headers for Streamable HTTP."""
+    headers = {MCP_PROTOCOL_VERSION_HEADER: _negotiate_protocol_version(request)}
+    if session_id:
+        headers[MCP_SESSION_ID_HEADER] = session_id
+    return headers
+
 @fastapi_app.get("/health")
 async def health_check():
     """Health check endpoint for Cloud Run."""
@@ -158,7 +199,167 @@ async def health_check():
 @fastapi_app.get("/")
 async def root():
     """Simple root endpoint for readiness/testing."""
-    return {"status": "ok", "message": "OpenReflect MCP"}
+    return {
+        "status": "ok",
+        "message": "OpenReflect MCP",
+        "transports": {
+            "streamable_http": MCP_STREAMABLE_ENDPOINT,
+            "legacy_sse": "/sse",
+            "legacy_message": "/message",
+        },
+    }
+
+
+@fastapi_app.head(MCP_STREAMABLE_ENDPOINT)
+@fastapi_app.head(f"{MCP_STREAMABLE_ENDPOINT}/")
+async def mcp_head_endpoint(request: Request):
+    """Reachability probe for the Streamable HTTP MCP endpoint."""
+    if (resp := _authorize(request)) is not None:
+        return resp
+    return Response(status_code=200, headers=_mcp_response_headers(request))
+
+
+@fastapi_app.post(MCP_STREAMABLE_ENDPOINT)
+@fastapi_app.post(f"{MCP_STREAMABLE_ENDPOINT}/")
+async def mcp_post_endpoint(request: Request):
+    """
+    Streamable HTTP MCP endpoint.
+
+    This is the modern remote MCP transport shape: clients send JSON-RPC
+    messages to one MCP endpoint instead of using separate `/sse` and `/message`
+    endpoints. This implementation returns JSON responses for request/response
+    calls and uses `Mcp-Session-Id` headers for clients that expect session
+    lifecycle support.
+    """
+    if (resp := _authorize(request)) is not None:
+        return resp
+
+    try:
+        body = await request.json()
+    except json.JSONDecodeError:
+        raise HTTPException(status_code=400, detail="Invalid JSON")
+
+    request_session_id = request.headers.get(MCP_SESSION_ID_HEADER)
+    session_id = request_session_id
+
+    try:
+        if isinstance(body, dict) and body.get("method") == "initialize" and not session_id:
+            session_id = uuid.uuid4().hex
+            _streamable_sessions.add(session_id)
+        elif session_id:
+            _streamable_sessions.add(session_id)
+
+        resp = await _handle_jsonrpc(body)
+        headers = _mcp_response_headers(request, session_id=session_id)
+
+        if resp is None:
+            # JSON-RPC notification: accepted, no response body.
+            return Response(status_code=202, headers=headers)
+
+        return Response(
+            content=json.dumps(
+                _to_jsonable(resp),
+                separators=(",", ":"),
+                ensure_ascii=False,
+            ),
+            status_code=200,
+            media_type="application/json",
+            headers=headers,
+        )
+
+    except ValueError as e:
+        return Response(
+            content=json.dumps(
+                {
+                    "jsonrpc": "2.0",
+                    "id": body.get("id") if isinstance(body, dict) else None,
+                    "error": {"code": -32600, "message": str(e)},
+                },
+                separators=(",", ":"),
+            ),
+            status_code=400,
+            media_type="application/json",
+            headers=_mcp_response_headers(request, session_id=session_id),
+        )
+    except Exception as e:
+        logger.error(f"Error processing Streamable HTTP message: {e}", exc_info=True)
+        return Response(
+            content=json.dumps(
+                {
+                    "jsonrpc": "2.0",
+                    "id": body.get("id") if isinstance(body, dict) else None,
+                    "error": {"code": -32603, "message": str(e)},
+                },
+                separators=(",", ":"),
+            ),
+            status_code=500,
+            media_type="application/json",
+            headers=_mcp_response_headers(request, session_id=session_id),
+        )
+
+
+@fastapi_app.get(MCP_STREAMABLE_ENDPOINT)
+@fastapi_app.get(f"{MCP_STREAMABLE_ENDPOINT}/")
+async def mcp_get_endpoint(request: Request):
+    """
+    Optional Streamable HTTP GET stream.
+
+    The current server has no server-initiated notifications, but this endpoint
+    provides a standards-shaped SSE stream for clients that open GET /mcp after
+    initialization. Tool calls should still be sent as POST /mcp.
+    """
+    if (resp := _authorize(request)) is not None:
+        return resp
+
+    session_id = request.headers.get(MCP_SESSION_ID_HEADER)
+    if not session_id:
+        return Response(
+            content=json.dumps({"error": "Missing Mcp-Session-Id header"}),
+            status_code=400,
+            media_type="application/json",
+            headers=_mcp_response_headers(request),
+        )
+
+    _streamable_sessions.add(session_id)
+
+    async def event_stream() -> AsyncGenerator[str, None]:
+        try:
+            logger.info(f"Streamable HTTP GET stream opened: {session_id}")
+            while True:
+                if await request.is_disconnected():
+                    break
+                yield ": keepalive\n\n"
+                await asyncio.sleep(15)
+        except asyncio.CancelledError:
+            logger.info(f"Streamable HTTP GET stream disconnected: {session_id}")
+
+    return StreamingResponse(
+        event_stream(),
+        media_type="text/event-stream",
+        headers={
+            **_mcp_response_headers(request, session_id=session_id),
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no",
+        },
+    )
+
+
+@fastapi_app.delete(MCP_STREAMABLE_ENDPOINT)
+@fastapi_app.delete(f"{MCP_STREAMABLE_ENDPOINT}/")
+async def mcp_delete_endpoint(request: Request):
+    """Terminate a Streamable HTTP MCP session."""
+    if (resp := _authorize(request)) is not None:
+        return resp
+
+    session_id = request.headers.get(MCP_SESSION_ID_HEADER)
+    if session_id:
+        _streamable_sessions.discard(session_id)
+
+    return Response(
+        status_code=204,
+        headers=_mcp_response_headers(request, session_id=session_id),
+    )
 
 @fastapi_app.get("/sse")
 @fastapi_app.get("/sse/")

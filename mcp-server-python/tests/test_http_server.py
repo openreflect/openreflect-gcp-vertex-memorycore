@@ -68,6 +68,48 @@ async def test_message_endpoint(base_url: str) -> bool:
             return False
 
 
+async def test_streamable_http_endpoint(base_url: str) -> bool:
+    """Test the /mcp Streamable HTTP endpoint."""
+    print("Testing /mcp Streamable HTTP endpoint...")
+    async with httpx.AsyncClient() as client:
+        try:
+            message = {
+                "jsonrpc": "2.0",
+                "id": 1,
+                "method": "initialize",
+                "params": {
+                    "protocolVersion": "2025-03-26",
+                    "capabilities": {},
+                    "clientInfo": {
+                        "name": "test-streamable-client",
+                        "version": "1.0",
+                    },
+                },
+            }
+            response = await client.post(
+                f"{base_url}/mcp",
+                json=message,
+                headers={
+                    "Accept": "application/json, text/event-stream",
+                    "MCP-Protocol-Version": "2025-03-26",
+                },
+                timeout=10.0,
+            )
+            print(f"  Status: {response.status_code}")
+            print(f"  MCP-Protocol-Version: {response.headers.get('mcp-protocol-version')}")
+            print(f"  Mcp-Session-Id: {response.headers.get('mcp-session-id')}")
+            print(f"  Response: {response.text}")
+            data = response.json()
+            return bool(
+                response.status_code == 200
+                and response.headers.get("mcp-session-id") is not None
+                and data.get("result", {}).get("serverInfo", {}).get("name")
+            )
+        except Exception as e:
+            print(f"  Error: {e}")
+            return False
+
+
 async def test_sse_endpoint(base_url: str) -> bool:
     """Test the /sse endpoint."""
     print("Testing /sse endpoint...")
@@ -111,6 +153,8 @@ async def main():
     results.append(await test_root_endpoint(base_url))
     print()
     results.append(await test_message_endpoint(base_url))
+    print()
+    results.append(await test_streamable_http_endpoint(base_url))
     print()
     results.append(await test_sse_endpoint(base_url))
     print()
