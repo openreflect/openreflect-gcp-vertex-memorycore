@@ -110,6 +110,80 @@ async def test_streamable_http_endpoint(base_url: str) -> bool:
             return False
 
 
+async def test_streamable_http_session_lifecycle(base_url: str) -> bool:
+    """Test Streamable HTTP reachability, notification, and session cleanup."""
+    print("Testing /mcp Streamable HTTP session lifecycle...")
+    async with httpx.AsyncClient() as client:
+        try:
+            head_response = await client.head(
+                f"{base_url}/mcp",
+                headers={"MCP-Protocol-Version": "2025-03-26"},
+                timeout=5.0,
+            )
+            print(f"  HEAD status: {head_response.status_code}")
+
+            init_message = {
+                "jsonrpc": "2.0",
+                "id": 10,
+                "method": "initialize",
+                "params": {
+                    "protocolVersion": "2025-03-26",
+                    "capabilities": {},
+                    "clientInfo": {
+                        "name": "test-streamable-lifecycle-client",
+                        "version": "1.0",
+                    },
+                },
+            }
+            init_response = await client.post(
+                f"{base_url}/mcp",
+                json=init_message,
+                headers={
+                    "Accept": "application/json, text/event-stream",
+                    "MCP-Protocol-Version": "2025-03-26",
+                },
+                timeout=10.0,
+            )
+            session_id = init_response.headers.get("mcp-session-id")
+            print(f"  Init status: {init_response.status_code}")
+            print(f"  Session ID: {session_id}")
+
+            initialized_response = await client.post(
+                f"{base_url}/mcp",
+                json={
+                    "jsonrpc": "2.0",
+                    "method": "notifications/initialized",
+                    "params": {},
+                },
+                headers={
+                    "Accept": "application/json, text/event-stream",
+                    "MCP-Protocol-Version": "2025-03-26",
+                    "Mcp-Session-Id": session_id or "",
+                },
+                timeout=10.0,
+            )
+            print(f"  Initialized notification status: {initialized_response.status_code}")
+
+            delete_response = await client.delete(
+                f"{base_url}/mcp",
+                headers={"Mcp-Session-Id": session_id or ""},
+                timeout=5.0,
+            )
+            print(f"  DELETE status: {delete_response.status_code}")
+
+            return bool(
+                head_response.status_code == 200
+                and init_response.status_code == 200
+                and session_id
+                and initialized_response.status_code == 202
+                and initialized_response.headers.get("mcp-session-id") == session_id
+                and delete_response.status_code == 204
+            )
+        except Exception as e:
+            print(f"  Error: {e}")
+            return False
+
+
 async def test_sse_endpoint(base_url: str) -> bool:
     """Test the /sse endpoint."""
     print("Testing /sse endpoint...")
@@ -155,6 +229,8 @@ async def main():
     results.append(await test_message_endpoint(base_url))
     print()
     results.append(await test_streamable_http_endpoint(base_url))
+    print()
+    results.append(await test_streamable_http_session_lifecycle(base_url))
     print()
     results.append(await test_sse_endpoint(base_url))
     print()
