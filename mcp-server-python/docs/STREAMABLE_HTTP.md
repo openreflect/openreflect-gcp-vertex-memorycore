@@ -23,6 +23,39 @@ stdio              local MCP process transport
 The legacy endpoints remain available for compatibility. New remote integrations
 should prefer `/mcp` when the client supports Streamable HTTP.
 
+## Client Handoff Pattern
+
+Streamable HTTP is useful when several MCP-capable clients need to use the same
+remote memory service. A deployment can expose one authenticated `/mcp` endpoint
+and let each client identify itself during `initialize`.
+
+Example flow:
+
+1. A local coding assistant initializes against `https://SERVICE_URL/mcp` and
+   writes memories while working through an implementation.
+2. A desktop assistant initializes against the same endpoint later and retrieves
+   relevant memories using the same scope.
+3. A browser-based MCP client initializes against the same endpoint and can
+   continue the workflow without copying local files between clients.
+
+The server sees these as separate MCP client sessions using a shared backend
+memory store. Provenance-aware deployments can use the client name, protocol
+version, transport, scope, and tool calls as inputs to their private provenance
+layer.
+
+Suggested `clientInfo.name` values:
+
+```text
+chatgpt-web
+claude-desktop
+gemini-cli
+goose
+local-dev-agent
+```
+
+These names are examples only. Use stable names that make sense for the client
+or workflow being connected.
+
 ## Basic Initialize Request
 
 ```bash
@@ -98,4 +131,3 @@ Streamable HTTP may still use Server-Sent Events internally for streaming. The
 important protocol change is that modern remote MCP uses a single MCP endpoint
 such as `/mcp`, while legacy HTTP+SSE uses separate `/sse` and `/message`
 endpoints.
-
