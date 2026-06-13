@@ -1,20 +1,26 @@
 # OpenReflect GCP Vertex MemoryCore
 
 OpenReflect GCP Vertex MemoryCore is a prototype Model Context Protocol
-server for connecting an MCP-capable client to Google Cloud Vertex AI memory
+server for connecting MCP-capable clients to Google Cloud Vertex AI memory
 infrastructure.
 
-The goal is simple: expose a small set of memory tools over MCP so an AI client
-can initialize a memory backend, generate memories from conversation context,
-retrieve relevant memories, and manage stored facts through a deployable Cloud
-Run service.
+The goal is simple: expose a small set of memory tools over MCP so AI clients
+can initialize a shared memory backend, generate memories from conversation
+context, retrieve relevant memories, and manage stored facts through a
+deployable Cloud Run service.
 
 ## Why it exists
 
-LLM sessions are usually stateless. Useful assistants and tools need a way to
-carry durable, inspectable memory without putting every past interaction back
-into the prompt. This repository explores one concrete bridge between MCP
-clients and Google Cloud's managed AI platform.
+LLM sessions are usually stateless, and each client tends to keep its own local
+view of context. Useful assistants and tools need a way to carry durable,
+inspectable memory without putting every past interaction back into the prompt
+and without losing track of where a fact came from.
+
+This repository explores one concrete bridge between MCP clients and Google
+Cloud's managed AI platform. The intended shape is a shared memory layer that
+can be reached by tools such as ChatGPT, Gemini, Claude Desktop, Goose, and
+other MCP-capable clients, while preserving enough provenance to tell which
+client, conversation, or workflow produced or used a memory.
 
 The project is intentionally narrow. It is not a complete identity, consent, or
 production memory governance system. It is a working integration surface for
@@ -23,13 +29,13 @@ experimentation, evaluation, and extension.
 ## Core idea
 
 ```text
-MCP client
+ChatGPT / Gemini / Claude Desktop / Goose / other MCP clients
     |
     |  JSON-RPC over SSE / HTTP
     v
 MemoryCore MCP server
     |
-    |  Google Cloud client APIs
+    |  memory tools + provenance metadata
     v
 Vertex AI Agent Engine / Memory Bank
 ```
@@ -48,9 +54,37 @@ The server presents memory operations as MCP tools:
 The HTTP transport is designed for Cloud Run, with local development support
 through standard Python tooling.
 
+## Cross-client continuity
+
+MemoryCore is meant to let multiple MCP-capable clients participate in the same
+memory fabric instead of trapping useful context inside one chat surface.
+
+Example workflows:
+
+- Start a technical investigation in ChatGPT, generate durable memories from the
+  findings, and retrieve those memories later from Claude Desktop while drafting
+  implementation notes.
+- Use Gemini for source-grounded research, store the distilled observations with
+  source/provenance metadata, then let Goose retrieve the relevant context while
+  operating in a local development environment.
+- Begin a planning conversation in one client, continue execution in another,
+  and keep the handoff anchored to explicit memory records rather than copied
+  chat excerpts.
+- Run several MCP clients against one backend so each tool can contribute to and
+  query the same continuity layer, while future audit logs can show which client
+  created, updated, retrieved, or deleted each memory.
+
+The prototype does not claim complete cross-client identity, consent, or
+governance semantics. It provides a concrete MCP surface where those concerns
+can be tested against real client behavior instead of treated as abstract
+architecture.
+
 ## Design principles
 
 - Keep the MCP surface small and explicit.
+- Treat inter-client memory sharing as a core capability, not a side effect.
+- Preserve provenance metadata wherever a client, conversation, workflow, or
+  memory operation can be identified.
 - Prefer deployable examples over abstract diagrams.
 - Keep environment-specific configuration out of the public repository.
 - Make local development possible without requiring a pre-provisioned memory
